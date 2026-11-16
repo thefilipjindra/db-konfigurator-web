@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>d&amp;b kalkulačka ozvučení</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Plán: technický nástroj pro obchod – vlevo zadání akce, vpravo karty variant a detail vybrané varianty. */
+:root{
+  --bg:#f3f4f6; --panel:#ffffff; --ink:#16191d; --muted:#5d6670; --line:#d9dde2;
+  --accent:#c8102e; --accent-ink:#ffffff; --soft:#eef0f3;
+  --good:#1f7a4d; --good-bg:#e3f2ea; --warn:#a15c00; --warn-bg:#fbf0dc;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121417; --panel:#1b1e22; --ink:#e8eaed; --muted:#9aa3ad; --line:#2d3238;
+  --accent:#ff4d5e; --accent-ink:#121417; --soft:#23272c;
+  --good:#5fd39a; --good-bg:#16332a; --warn:#f2b45a; --warn-bg:#3a2c14; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#121417; --panel:#1b1e22; --ink:#e8eaed; --muted:#9aa3ad; --line:#2d3238;
+  --accent:#ff4d5e; --accent-ink:#121417; --soft:#23272c;
+  --good:#5fd39a; --good-bg:#16332a; --warn:#f2b45a; --warn-bg:#3a2c14; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body)}
+header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:18px 20px 6px}
+header h1{font:700 26px/1.1 var(--f-display);margin:0;letter-spacing:.2px;text-wrap:balance}
+header h1 span{color:var(--accent)}
+header p{margin:0;color:var(--muted);font-size:13px}
+main{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:16px;padding:12px 20px 32px;align-items:start}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font:600 18px/1.2 var(--f-display);margin:0 0 10px;letter-spacing:.3px;text-transform:uppercase}
+h3{font:600 15px/1.2 var(--f-display);margin:14px 0 6px;letter-spacing:.3px;text-transform:uppercase;color:var(--muted)}
+form{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:500}
+input,select{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:7px 8px;min-width:0;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg input{position:absolute;opacity:0;width:1px}
+.seg label{flex:1;display:block;text-align:center;padding:7px 4px;cursor:pointer;color:var(--ink);font-size:13.5px;background:var(--soft)}
+.seg input:checked+label{background:var(--ink);color:var(--panel)}
+.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:-2px}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);font-weight:400}
+.check input{width:auto}
+.list{display:grid;gap:6px}
+.li{display:grid;grid-template-columns:52px 1fr 1fr 30px;gap:6px;align-items:center}
+.li.z{grid-template-columns:1fr 1fr 52px 52px 30px}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:6px 10px}
+button.x{padding:6px 0;color:var(--muted)}
+button.add{justify-self:start;font-size:13px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px;cursor:pointer;border-left:4px solid var(--line)}
+.card.rec{border-left-color:var(--good)} .card.edge{border-left-color:var(--warn)}
+.card[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:-1px}
+.card .nm{font:600 17px/1.15 var(--f-display);letter-spacing:.2px}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:99px;justify-self:start}
+.pill.rec{background:var(--good-bg);color:var(--good)} .pill.edge{background:var(--warn-bg);color:var(--warn)} .pill.ok{background:var(--soft);color:var(--muted)}
+.hr{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums}
+.sum{font-size:13px;color:var(--muted)}
+.sum b{color:var(--ink);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--f-display);text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;width:52px}
+td.g{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.tw{overflow-x:auto}
+.box{border-radius:8px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.box.warn{background:var(--warn-bg);color:var(--warn)}
+.hr.must{color:var(--warn);font-weight:600}
+.seg label{white-space:nowrap}
+.plan{margin:4px 0 0}
+.plan svg{display:block;width:100%;height:auto;max-height:240px}
+.plan .area{fill:var(--soft);stroke:var(--line);stroke-width:1.5}
+.plan .stage{fill:var(--accent);opacity:.85}
+.plan .dim{font:12px var(--f-mono,monospace);fill:var(--muted)}
+.plan .lbl{font:600 12px system-ui,sans-serif;fill:var(--accent-ink)}
+.plan .spk{fill:var(--ink)}
+.righ input:disabled{opacity:.5}
+.checks{display:flex;flex-wrap:wrap;gap:6px 18px}
+.rigrow{align-items:end}
+.ffopt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.9em}
+.vhead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}
+.chmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.champ{border:1px solid var(--line,#ddd);border-radius:8px;padding:8px 10px}
+.champ ol{list-style:none;margin:6px 0 0;padding:0;font-size:.9em}
+.champ li{display:flex;gap:8px;padding:2px 0}
+.champ li.free{color:var(--muted)}
+.champ .cl{font-family:var(--f-mono,monospace);font-weight:700;width:1.2em}
+.box.note{background:var(--soft);color:var(--ink)}
+.amps{display:flex;flex-wrap:wrap;gap:8px}
+.amp{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:92px}
+.amp b{display:block;font:600 20px var(--f-mono)}
+.amp span{font-size:12px;color:var(--muted)}
+.detail{display:grid;gap:12px}
+.dhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+details ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--muted)}
+.stack{display:grid;gap:16px}
+.empty{color:var(--muted)}
+/* Režim učení */
+.learn{display:grid;gap:12px;border-color:var(--accent)}
+.learn .lhead{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between}
+.learn textarea{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:7px 8px;width:100%;min-height:70px;resize:vertical}
+.learn .verd{display:flex;flex-wrap:wrap;gap:6px}
+.learn .verd button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.learn .ed{display:grid;grid-template-columns:minmax(110px,1.2fr) 64px minmax(90px,1fr) 30px;gap:6px;align-items:center}
+.learn .ed.h{font-size:12px;color:var(--muted)}
+.learn .ed input.chg,.learn .ed select.chg{border-color:var(--accent)}
+.learn .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.learn .saved{font-size:13px}
+.learn .saved td{padding:5px 6px}
+.learn .status{font-size:12.5px;color:var(--muted)}
+.learnflag{font:600 12px var(--f-body);background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:2px 9px}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>d&amp;b</span> kalkulačka ozvučení</h1>
+  <p>Orientační návrh pro nacenění poptávky. Konečnou sestavu vždy konzultujte se zvukařem.</p>
+</header>
+<main>
+<section class="panel" aria-labelledby="h-input">
+  <h2 id="h-input">Akce</h2>
+  <form id="f" autocomplete="off">
+    <div><label>Program</label>
+        <div class="seg"><input type="radio" name="prog" id="prog-band" value="band"><label for="prog-band">Kapela</label><input type="radio" name="prog" id="prog-speech" value="speech" checked><label for="prog-speech">Mluvené slovo</label></div></div>
+    <div><label>Prostředí</label>
+        <div class="seg"><input type="radio" name="env" id="env-in" value="in" checked><label for="env-in">Uvnitř</label><input type="radio" name="env" id="env-out" value="out"><label for="env-out">Venku</label></div></div>
+    <div class="checks">
+      <label class="check" for="acoustic"><input id="acoustic" type="checkbox">Náročná akustika / hustě obsazeno (kostel, vysoké stropy)</label>
+      <label class="check" for="ap"><input id="ap" type="checkbox">ArrayProcessing (AP)</label>
+    </div>
+    <div class="row3">
+      <label for="width">Šířka plochy (m)<input id="width" type="number" min="1" value="15"></label>
+      <label for="depth">Délka plochy (m)<input id="depth" type="number" min="1" value="25"></label>
+      <label for="stage">Šířka pódia (m)<input id="stage" type="number" min="1" value="8"></label>
+    </div>
+    <p class="hint">Délka plochy = od hrany pódia (pozice systému) k poslední řadě.</p>
+    <figure class="plan" aria-label="Náčrt plochy a pódia"><svg id="plan" role="img"></svg></figure>
+    <div class="row rigrow">
+      <label class="check" for="rig"><input id="rig" type="checkbox" checked>Lze věšet</label>
+      <label for="rigH" class="righ">Max. výška rigování (m)<input id="rigH" type="number" min="3" step="0.5" value="7"></label>
+    </div>
+
+    <h3>Odposlechy</h3>
+    <div class="list" id="mixes"></div>
+    <button type="button" class="add" id="addMix">+ Přidat odposlech</button>
+    <p class="hint">Mono: reproboxy odposlechu sdílí jeden kanál zesilovače (např. zpěv). Stereo (jen pro 2 reproboxy): každý reprobox má vlastní kanál L/P (např. klávesy).</p>
+    <label for="drumfill">Drumfill<select id="drumfill"><option value="none">Žádný</option><option value="sub">V-GSUB</option><option value="sub+MAX2">V-GSUB + MAX2</option><option value="sub+M4">V-GSUB + M4</option></select></label>
+
+    <h3>Přilehlé prostory</h3>
+    <div class="list" id="zones"></div>
+    <button type="button" class="add" id="addZone">+ Přidat prostor</button>
+  </form>
+</section>
+
+<section class="stack" aria-labelledby="h-var">
+  <div class="panel">
+    <div class="vhead"><h2 id="h-var">Varianty</h2><label class="check" for="showAll"><input id="showAll" type="checkbox">Zobrazit všechny varianty <span id="hiddenCnt" class="sum"></span></label></div>
+    <div id="notes"></div>
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="panel detail" id="detail" aria-live="polite"></div>
+  <div class="panel learn" id="learn" hidden></div>
+</section>
+</main>
+
+<script>
+const LEARN = false;
+const CATALOG = {"_meta": {"source": "dbaudio.com – produktové stránky a manuály, staženo 2026-11-07", "note": "Hodnoty null = nezjištěno, ověřit. maxSplPeakDb = 1 m, free field, peak, 1 box, s doporučeným zesilovačem. Sklad aplikace neřeší."}, "loudspeakers": [{"id": "V8", "model": "V8", "category": "main_la", "family": "V", "maxSplPeakDb": 142, "dispersionH": 80, "dispersionV": null, "freqLowHz": 67, "freqHighHz": 18000, "freqLowCutHz": 100, "impedanceOhm": 8, "weightKg": 34, "flyable": true, "amps": {"D40": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/v-series/v8/", "apCapable": true, "heightMm": 310, "heightSource": "https://www.dbaudio.com/global/en/products/series/v-series/v8/ (Dimensions h x w x d, staženo 2026-11-09)"}, {"id": "V12", "model": "V12", "category": "main_la", "family": "V", "maxSplPeakDb": 142, "dispersionH": 120, "dispersionV": null, "freqLowHz": 67, "freqHighHz": 18000, "freqLowCutHz": 100, "impedanceOhm": 8, "weightKg": 34, "flyable": true, "amps": {"D40": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/v-series/v12/", "apCapable": true, "heightMm": 310, "heightSource": "https://www.dbaudio.com/global/en/products/series/v-series/v12/ (Dimensions h x w x d, staženo 2026-11-09)"}, {"id": "CCL8", "model": "CCL8", "category": "main_la", "family": "CCL", "maxSplPeakDb": 137, "maxSplPeakDbByAmp": {"D25": 135}, "dispersionH": 80, "dispersionV": null, "freqLowHz": 60, "freqHighHz": 18000, "freqLowCutHz": 90, "impedanceOhm": 10, "weightKg": 17.6, "flyable": true, "maxFlownCabinets": 24, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/all/series/cl-series/ccl8/", "apCapable": true, "heightMm": 209, "heightSource": "https://www.dbaudio.com/global/en/products/all/series/cl-series/ccl8/ (Dimensions h x w x d, staženo 2026-11-09)"}, {"id": "CCL12", "model": "CCL12", "category": "main_la", "family": "CCL", "maxSplPeakDb": 136, "maxSplPeakDbByAmp": {"D25": 134}, "dispersionH": 120, "dispersionV": null, "freqLowHz": 60, "freqHighHz": 18000, "freqLowCutHz": 90, "impedanceOhm": 10, "weightKg": 17.6, "flyable": true, "maxFlownCabinets": 24, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/all/series/cl-series/ccl12/", "apCapable": true, "heightMm": 209, "heightSource": "https://www.dbaudio.com/global/en/products/all/series/cl-series/ccl12/ (Dimensions h x w x d, staženo 2026-11-09)"}, {"id": "T10", "model": "T10", "category": "main_la", "family": "T", "alsoPointSource": true, "maxSplPeakDb": 132, "maxSplPeakDbPoint": 130, "dispersionH": 105, "dispersionHPoint": 90, "dispersionVPoint": 35, "freqLowHz": 68, "freqHighHz": 18000, "freqLowCutHz": 120, "impedanceOhm": 16, "weightKg": 11, "flyable": true, "amps": {"D40": {"perChannel": 4}, "D25": {"perChannel": 4}, "D80": {"perChannel": 4}, "D6": {"perChannel": 2, "note": "používáme pro T10 point source / delay na konferencích"}}, "source": "https://www.dbaudio.com/global/en/products/series/t-series/t10/", "apCapable": true, "heightMm": 197, "heightSource": "https://www.dbaudio.com/global/en/products/series/t-series/t10/ (Dimensions h x w x d, staženo 2026-11-09)"}, {"id": "V7P", "model": "V7P", "category": "main_point", "family": "V", "maxSplPeakDb": 140, "dispersionH": 75, "dispersionV": 40, "freqLowHz": 59, "freqHighHz": 18000, "freqLowCutHz": 100, "impedanceOhm": 8, "weightKg": 33, "flyable": true, "amps": {"D40": {"perChannel": 2}, "D80": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/v-series/v7p/"}, {"id": "Y10P", "model": "Y10P", "category": "main_point", "family": "Y", "maxSplPeakDb": 136, "maxSplPeakDbByAmp": {"D25": 134}, "dispersionH": 110, "dispersionV": 40, "freqLowHz": 59, "freqHighHz": 18000, "freqLowCutHz": 118, "impedanceOhm": 8, "weightKg": 18, "flyable": true, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}, "D6": {"perChannel": 2}, "D80": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/y-series/y10p/"}, {"id": "AL90", "model": "AL90", "category": "main_point", "family": "A", "maxSplPeakDb": 139, "maxSplPeakDbByAmp": {"D25": 136}, "dispersionH": 90, "dispersionV": 30, "freqLowHz": 60, "freqHighHz": 18000, "freqLowCutHz": 95, "impedanceOhm": 8, "weightKg": 23, "flyable": true, "maxFlownCabinets": 4, "maxGroundCabinets": 3, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}, "D80": {"perChannel": 2}}, "note": "Augmented array: sloupec až 4 boxy (věšení), stack max. 3 boxy (i na V-GSUB).", "source": "https://www.dbaudio.com/global/en/products/series/a-series/al90-loudspeaker/"}, {"id": "V-GSUB", "model": "V-GSUB", "category": "sub", "family": "V", "maxSplPeakDb": 137, "cardioid": true, "freqLowHz": 37, "freqHighHz": 115, "impedanceOhm": 8, "weightKg": 61, "flyable": true, "amps": {"D80": {"perChannel": 2}, "D40": {"perChannel": 2, "note": "137 dB platí pro 1 box na kanál"}}, "source": "https://www.dbaudio.com/global/en/products/series/v-series/v-gsub/"}, {"id": "KSL-SUB", "model": "KSL-SUB", "category": "sub", "family": "SL", "maxSplPeakDb": 139, "cardioid": true, "freqLowHz": 36, "freqHighHz": 105, "impedanceOhm": 4, "weightKg": 82, "flyable": true, "amps": {"D40": {"channelsPerCabinet": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/sl-series/ksl-sub/"}, {"id": "M4", "model": "M4", "category": "monitor", "family": "M", "maxSplPeakDb": 138, "maxSplPeakDbActive": 140, "dispersionH": 50, "dispersionV": 70, "freqLowHz": 55, "freqHighHz": 17000, "impedanceOhm": 8, "weightKg": 20, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}, "D6": {"perChannel": 2}, "D80": {"perChannel": 2}}, "note": "Počítáme v pasivním režimu. Aktivní režim: 2 boxy na pár kanálů.", "source": "https://www.dbaudio.com/global/en/products/series/monitors/m4/"}, {"id": "MAX2", "model": "MAX2", "category": "monitor", "family": "M", "maxSplPeakDb": 135, "dispersionH": 75, "dispersionV": 75, "freqLowHz": 55, "freqHighHz": 20000, "impedanceOhm": 8, "weightKg": 23, "amps": {"D40": {"perChannel": 2}, "D25": {"perChannel": 2}, "D6": {"perChannel": 2}, "D80": {"perChannel": 2}}, "source": "https://www.dbaudio.com/global/en/products/series/monitors/max2/"}], "amplifiers": [{"id": "D80", "model": "D80", "category": "amp", "channels": 4, "powerW4Ohm": 4000, "powerW8Ohm": 2000, "rackUnits": 2, "weightKg": 19, "source": "https://www.dbaudio.com/global/en/products/amplifiers/d80/"}, {"id": "D40", "model": "D40", "category": "amp", "channels": 4, "powerW4Ohm": 2400, "powerW8Ohm": 2000, "rackUnits": 2, "weightKg": 13.8, "source": "https://www.dbaudio.com/global/en/products/amplifiers/d40/"}, {"id": "D25", "model": "D25", "category": "amp", "channels": 4, "powerW4Ohm": 1800, "powerW8Ohm": 900, "rackUnits": 2, "weightKg": 13.8, "source": "https://www.dbaudio.com/global/en/products/all/product-types/amplifiers/d25/", "note": "Primárně pro odposlechy."}, {"id": "D6", "model": "D6", "category": "amp", "channels": 2, "powerW4Ohm": 600, "powerW8Ohm": 350, "rackUnits": 2, "weightKg": 8, "excludes": ["V-Series", "SL-Series", "2-Way Active"], "note": "Heritage. Nepoužívat pro V-Series, SL-Series ani CCL (CCL nemá D6 v doporučených).", "source": "https://www.dbaudio.com/global/en/products/amplifiers/d6/"}], "racks": [{"id": "RACK-2xD40-1xD80", "label": "Rack 2× D40 + 1× D80", "contents": {"D40": 2, "D80": 1}, "note": "Máme 2 hotové racky. Nabízet jako možnost jen u dostatečně velké akce s AP, kde se racky plně využijí (každý potřebuje ≥ 2× D40 a ≥ 1× D80).", "count": 2}]};
+const RULES = {"_meta": {"status": "NÁVRH k ověření technikem", "note": "Všechny hodnoty jsou výchozí odhady. Ladit podle proběhlých akcí. Vysvětlení v docs/RULES.md.", "usage": "Konference: T10 array 3/stranu v arc na distanční tyči na V-GSUB. T10 jako point source (PS) jen pro delay, ne jako main PA. AL90 jen venku jako out-fill / front-fill.", "scope": "Bez skladových omezení: systém lze rozšířit zápůjčkou totožné techniky od spolupracující firmy."}, "audienceDensityPerM2": 2, "firstRowDistanceM": 3, "earHeightM": 1.7, "targetPeakSplAtBackDb": {"speech": 95, "band": 112}, "outdoorMarginDb": 3, "arrayGainFactorDb": 15, "subExtraDb": {"band": 6, "speech": 0}, "lineArray": {"familyOrder": ["T", "CCL", "V"], "families": {"T": {"narrow": "T10", "wide": "T10", "minPerSide": 3, "maxFlownPerSide": 20, "flown": {"frameKg": 12, "swlKg": 250, "freeSplayMaxCabinets": 10, "freeSplayMaxKg": 110, "source": "d&b T-Series Rigging manual 1.2: max. 20× T10 (4.1.1); T Flying frame SWL 250 kg, frame 12 kg (2); libovolné úhly bez kontroly jen do 10× T10 / 110 kg, jinak ArrayCalc (1.1.1)."}, "minGroundPerSide": 3, "maxGroundPerSide": 6, "maxGroundSource": "Firemní limit 6× T10 na V-GSUB. Manuál d&b: max. 6× T10 na T Flying frame (4.2.1); T10 na V-GSUB manuál neuvádí.", "maxThrowM": 25, "avgSplayDeg": 8, "pole": {"perSide": 3, "sub": "V-GSUB", "subsPerSide": 1, "maxThrowM": 25, "note": "L/R mix top/sub: 3× T10 v arc na distanční tyči na V-GSUB. Víc beden tyč neunese."}}, "CCL": {"narrow": "CCL8", "wide": "CCL12", "minPerSide": 4, "maxFlownPerSide": 24, "flown": {"frameKg": 15.5, "swlKg": 500, "source": "d&b CCL Rigging manual 1.3: max. 24× CCL-TOP; CCL Flying frame (set 15,5 kg) SWL 500 kg včetně rigingu (kap. 2)."}, "minGroundPerSide": 3, "maxGroundPerSide": 6, "maxGroundSource": "Firemní limit 6× CCL na V-GSUB. Manuál d&b: max. 8× CCL-TOP jako ground stack, i na V-GSUB přes Pullback frame (10.3).", "maxThrowM": 40, "avgSplayDeg": 9}, "V": {"narrow": "V8", "wide": "V12", "minPerSide": 4, "maxFlownPerSide": 24, "flown": {"frameKg": 25.4, "swlKg": 860, "freeSplayMaxCabinets": 10, "freeSplayMaxKg": 340, "source": "d&b V-Series Rigging manual 1.12: max. 24× V-TOP; V Flying frame SWL 860 kg, frame 25,4 kg; libovolné úhly bez kontroly jen do 10× V-TOP / 340 kg, jinak ArrayCalc (1.3)."}, "minGroundPerSide": 4, "maxGroundPerSide": 4, "maxGroundTotalWithSubs": 8, "maxGroundSource": "Firemní limit 4× V8/V12 na V-GSUB. Manuál d&b: max. 8 TOP na Flying frame (3.4.1), smíšený stack SUB + TOP max. 8 kusů celkem (3.4.3).", "maxThrowM": 60, "avgSplayDeg": 9}}, "showGroundAndFlownWhenRigAllowed": true, "groundStack": {"sub": "V-GSUB", "minSubsPerSide": 2, "fullForPrograms": ["band"], "fullNote": "Kapela: stack vždy v plné konfiguraci (maxGroundPerSide).", "note": "Stack = top reproboxy na rigingu vždy na V-GSUB, min. 2 V-GSUB na stranu (stack je výš nad publikem). Neplatí pro T10 na distanční tyči (1 V-GSUB na stranu)."}, "showGroundAndFlownNote": "‚Lze věšet‘ = věšení je možné, ne povinné. U každé rodiny se nabídne věšená i stack varianta (s AP jen věšená). Bez věšení engine upozorní, když stack nemá rezervu a věšený systém by vyhověl.", "flownTrimHeightM": 7, "groundStackTopHeightM": 2.5, "wideBottomPerSide": 2, "wideBottomNote": "V12 / CCL12 obvykle 2 ks na stranu dole ve sloupci kvůli pokrytí nejbližších řad.", "depthTable": {"note": "Počet beden na stranu pro věšený sloupec podle hloubky (pozice systému → poslední řada). Platí pro AP i Line/Arc (úsporná verze = stejný počet, bez AP, sdružení podle max. beden na kanál). null = rodina nad dosah. delay=true → přidat delay. VŽDY konzultovat se zvukařem.", "rows": [{"maxDepthM": 20, "T": 6, "CCL": 6, "V": 6, "delay": false}, {"maxDepthM": 30, "T": 8, "CCL": 6, "V": 6, "delay": false}, {"maxDepthM": 40, "T": 10, "CCL": 8, "V": 8, "delay": false}, {"maxDepthM": 50, "T": null, "CCL": 10, "V": 8, "delay": false}, {"maxDepthM": 60, "T": null, "CCL": 10, "V": 10, "delay": false}, {"maxDepthM": 80, "T": null, "CCL": 12, "V": 12, "delay": false, "delayFor": ["CCL"]}, {"maxDepthM": 9999, "T": null, "CCL": null, "V": 12, "delay": true}], "growWithinStep": true, "growNote": "Hodnota v tabulce je strop pro danou hloubku. Počet roste po 1 reproboxu na stranu podle potřebné rezervy, od hodnoty předchozího kroku tabulky."}, "depthTableByProgram": {"speech": {"note": "Mluvené slovo: do headroomOnlyUpToM m počet věšeného arraye jen podle hlasitosti (od minPerSide); nad to tabulka plynule jako minimum kvůli dosahu do hloubky (hodnoty jsou zároveň strop). NÁVRH: tabulka pro kapelu minus 2, nejméně 4.", "rows": [{"maxDepthM": 20, "T": 4, "CCL": 4, "V": 4, "delay": false}, {"maxDepthM": 30, "T": 6, "CCL": 4, "V": 4, "delay": false}, {"maxDepthM": 40, "T": 8, "CCL": 6, "V": 6, "delay": false}, {"maxDepthM": 50, "T": null, "CCL": 8, "V": 6, "delay": false}, {"maxDepthM": 60, "T": null, "CCL": 8, "V": 8, "delay": false}, {"maxDepthM": 80, "T": null, "CCL": 10, "V": 10, "delay": false, "delayFor": ["CCL"]}, {"maxDepthM": 9999, "T": null, "CCL": null, "V": 10, "delay": true}], "countBy": "headroom", "headroomOnlyUpToM": 25}}, "flownHeight": {"standardRigHeightM": 7, "maxPerSideUpToStandard": 12, "minBottomEdgeM": 2.5, "note": "Do výšky rigování 7 m max. 12 reproboxů na stranu (výška sloupu). Nad 7 m lze přidávat až do limitu výrobce (maxFlownPerSide). Spodní hrana arraye vždy min. 2,5 m nad zemí: max. počet = (výška rigování − 2,5 m) / výška reproboxu (rovný sloupec, bez flying frame)."}}, "pointSource": {"models": {"speech": [{"id": "Y10P", "maxPerSide": 1}, {"id": "V7P", "maxPerSide": 2}], "band": [{"id": "Y10P", "maxPerSide": 1}, {"id": "V7P", "maxPerSide": 2}]}, "maxThrowM": 25, "pairSumDb": 3, "columnGainFactorDb": 15, "note": "Malé systémy (2× V7P, 2× T10/Y10P point, 6× T10 na V-GSUB): nad 25 m se přidává delay.", "widthCoverageNote": "Počet samostatných reproboxů na stranu kvůli šířce: potřebný horizontální úhel jedné strany (od středu plochy po okraj, vztaženo k polovině délky, reproboxy na hranách pódia) děleno dispersionH z katalogu. Nahrazuje wideIfWidthToDepthRatio.", "flown": {"programs": ["speech"], "outdoorOnly": true, "models": ["V7P"], "note": "Malá venkovní stage bez kapely: V7P věšený na VP Flying adapter, když lze věšet. Bez delay, jen do dosahu (fills.delay.speechGround.reachM)."}, "widePairs": {"minWidthM": 30, "minLengthM": 20, "note": "2 samostatné reproboxy na stranu (4× V7P) jen na ploše od 30 m šířky a 20 m délky: rozmístěné rovnoměrně po šířce, každý na vlastním V-GSUB s distanční tyčí. Jinak 1 na stranu a šířku doplní out-fill."}, "delayInNarrowSpace": {"programs": ["speech", "band"], "maxWidthM": 20, "maxAreaM2": 600, "maxDepthM": 50, "note": "Úzký malý prostor uvnitř (šířka do 20 m, plocha do 600 m², délka do 50 m): V7P s delay (linie každých 10 m, 2× T10 PS) se nabízí i když jde věšet; u kapely i nad 25 m délky. Kapela: když jde věšet, V7P s delay zůstává v nabídce, ale doporučí se věšený array (bandBackWhenRig).", "bandBackWhenRig": true}}, "subs": {"speechSubsWhenAudienceOver": 300, "byFamily": {"T": "V-GSUB", "CCL": "V-GSUB", "V": "V-GSUB", "point": "V-GSUB"}, "minPerSide": 1, "maxPerSide": 12, "minRatioBand": {"note": "podíl subů k top bednám (subů = tops × ratio). d&b TI 385: V-SUB:V8/V12 ≈ 1:2, rozložený SUB array ≈ 2:3; T-SUB:T10 ≈ 1:3.", "mixTopSub": {"T": 0.34, "CCL": 0.5, "V": 0.5, "point": 1}, "subArray": {"T": 0.34, "CCL": 0.6, "V": 0.6}}, "minTotalBand": {"CCL": 8, "V": 8, "note": "Kapela (neznámá) + věšený systém. V-Series = stejně nebo víc než CCL."}, "comboSubarray": {"note": "KSL-SUB jako 2. řada subarray za V-GSUB. Standardně ve standard módu (36–105 Hz), INFRA (33–75 Hz) jako volitelná prémiová varianta. Jen kapela.", "when": {"outdoor": {"depthOverM": 40, "orPeopleOver": 2000}, "indoor": {"depthOverM": 50, "orPeopleOver": 3000}}, "count": {"perVGSUB": 3, "min": 2, "max": 4, "even": true, "note": "KSL-SUB jen 2 nebo 4 kusy, i v záměně subů."}, "mode": "standard", "replacement": {"vgsub": 2, "ksl": 1, "note": "Výstup 'Záměna subů': 1 KSL-SUB = 2 V-GSUB, kroky 2 a 4 KSL, se změnou kanálů zesilovačů.", "showAsOutput": true, "steps": [2, 4]}, "optionalMode": "INFRA"}, "speechNote": "Mluvené slovo: suby jen nad 300 lidí (nebo jako podstavec T10), cíl bez navýšení, max. 2 na stranu, žádná minima ani kombinovaný subarray.", "speech": {"default": 2, "flownT10From": 8, "flownT10Min": 4, "maxPerSide": 2, "note": "Mluvené slovo: typicky 2× V-GSUB (k 2× V7P nebo 6× T10). Velká konference s ≥ 8× T10 na stranu věšeně → min. 4× V-GSUB (2 na pozici)."}, "configurations": {"mixTopSub": {"when": "systém na zemi (stack Line/Arc, V7P na tyči)", "perSide": "1–2 V-GSUB na stejné pozici jako top", "channels": "1 kanál na stranu"}, "subArray": {"when": "věšený systém u kapely", "layout": "řada před pódiem, 1 sub na pozici; při více než 7 kusech 2 na pozici", "channels": "každá pozice vlastní kanál (delay pro tvarování)", "maxSinglePerPositionCount": 7}, "speechFlown": {"layout": "L/R pozice pod věšeným systémem, max. 2 na pozici"}, "note": "Pravidlo pro kalkulačku: subarray jen u kapely s věšeným systémem, mluvené slovo L/R. V praxi ne vždy – zvukař upraví."}, "maxPerPosition": 2, "maxPerPositionNote": "Na jednu pozici (stack, pod reproboxem) nejvýš 2 suby. Rozmístěné samostatné reproboxy: 1 sub pod každým."}, "fills": {"frontFill": {"note": "Počet pozic podle šířky pódia: do smallStageMaxM m smallStageMinPositions pozice (kapela, ke zvážení), nad to 1 pozice na každé celé spacingM m (min. 2), rovnoměrně po hraně pódia s odsazením od rohů. Se subarray: pozice subů, když mají rozestup nad onSubArrayWhenSpacingOverM m.", "models": {"indoor": ["T10"], "outdoor": ["T10", "AL90"]}, "boxesPerPosition": {"indoor": 1, "outdoor": 2}, "smallStageMaxM": 8, "smallStageMinPositions": 2, "speechLargeStageOptional": true, "defaultStageWidthM": 8, "spacingM": 3, "smallStagePrograms": ["band"], "onSubArrayWhenSpacingOverM": 2, "smallStageOptional": true, "optionalNote": "Front-fill ke zvážení (malé pódium u kapely, široké pódium u konference) se do návrhu přidá jen zaškrtnutím Přidat front-fill ke zvážení."}, "outFill": {"note": "Jen venkovní akce s kapelou (potřeba akustického tlaku): když šířka plochy / šířka pódia > 1,5 → 1 pozice na stranu.", "ratioThreshold": 1.5, "ratioTwoPerSide": null, "models": {"outdoor": ["AL90", "Y10P", "T10"], "indoor": ["Y10P", "T10"]}, "onlyOutdoorBand": true, "modelsByMain": {"V7P": ["T10"], "note": "Out-fill k V7P: T10 jako point source (PS) na stativu s lyrou PS, 1 na stranu."}}, "delay": {"whenDepthOverMaxThrow": true, "spacingM": 12, "note": "Delay primárně T10 jako point source (PS). Y10P se jako delay nenabízí.", "throwDelayPrograms": ["speech"], "throwDelayNote": "Delay kvůli dosahu jen u mluveného slova (menší akce). U kapely se místo delay navyšuje main PA; rezerva se počítá až k poslední řadě. Výjimka: V-Series nad 80 m (tabulka hloubek).", "models": {"speech": ["T10"], "band": ["T10", "V7P"]}, "maxLines": null, "lineReachM": 25, "linesNote": "Delay kvůli dosahu jen u mluveného slova a jen tam, kde nejde věšet (systém na zemi, Lze věšet nezaškrtnuto). Linie každých lineSpacingM m za dosahem main PA, kolik jich délka plochy vyžaduje (maxLines null = bez omezení). Když věšet lze, nabídne se věšený array.", "lineSpacingM": 10, "speechGround": {"reachM": 30, "fullReachFamily": "T", "fullReachFromPerSide": 6, "note": "Konference bez věšení (stack T10 / CCL / V-Series, Y10P, V7P): dosah main PA 30 m, delay od 30 m. Výjimka: T10 stack se 6 a víc reproboxy na stranu má dosah podle měření (40 m)."}, "boxesPerLine": 2, "boxesNote": "Každá linie delay = 2 reproboxy (vlevo a vpravo), linie každých 10 m za dosahem main PA.", "bandIndoorStack": {"families": ["CCL"], "minMainReachM": 15, "note": "Kapela uvnitř bez věšení: CCL stack na hraně se nabídne s doporučeným delay od vzdálenosti, kam stack dohraje s rezervou a rovnoměrností. Linie každých 10 m, 2 reproboxy (L/P)."}}, "intelligibilityDelay": {"note": "Vstup 'Náročná akustika / hustě obsazený prostor' (kostel, vysoké stropy, moc lidí na malém místě): přidá delay pro srozumitelnost.", "minDepthM": 12, "atDepthShare": 0.5, "spacingM": 10, "models": {"speech": ["T10"], "band": ["T10", "V7P"]}}}, "monitors": {"band": ["MAX2", "M4"], "speech": ["MAX2", "M4"], "mixTypes": {"mono": {"note": "bedny ve stejném mixu na stejné pozici sdružené na kanál (max perChannel), např. hlavní zpěv"}, "stereo": {"note": "každá bedna vlastní kanál, např. klávesy"}}, "defaultMixType": "mono"}, "ampPreference": {"byModel": {"V-GSUB": ["D80"], "KSL-SUB": ["D40"]}, "main_la": ["D40", "D25"], "main_point": ["D40", "D25"], "sub": ["D40"], "monitor": {"band": ["D25", "D40", "D6"], "speech": ["D6", "D25", "D40"]}, "fill": {"band": ["D40", "D25", "D6"], "speech": ["D6", "D40", "D25"]}, "note": "D80 se nově objednává jen pro V-GSUB, ale jeho volné kanály se využijí pro filly a odposlechy."}, "systemType": {"note": "Typ systému volí engine sám (point source vs. sloupec v Line/Arc). Vstup 'auto' / 'point' / 'column' ho může přebít.", "autoPointSourceWhen": {"program": ["speech"], "maxDepthM": 25, "bandIndoor": {"maxDepthM": 25, "models": ["V7P"], "note": "Kapela uvnitř v malém prostoru (délka do 25 m): nabízí se i V7P."}}}, "arrayProcessing": {"note": "AP = d&b ArrayProcessing. Jen věšené pole v Line konfiguraci (T10 line, V8, V12, CCL8, CCL12), min. 6 na stranu, stejný typ zesilovače, 1 bedna na kanál.", "minPerSide": 6, "supportedModels": ["T10", "V8", "V12", "CCL8", "CCL12"], "sameAmpModelPerArray": true, "ifNotPossible": "fallbackLineArc", "requiresFlown": true, "perChannel": 1}, "ampAllocation": {"order": ["main", "sub", "drumfill", "monitor", "fill"], "spareChannelAmps": ["D80", "D40", "D25", "D6"], "monitorsSpareFirst": false, "fillsSpareFirst": true, "note": "Kapela: odposlechy na D25 (jednoduché R1), pak volné kanály, pak D40/D6. Mluvené slovo: odposlechy a delay T10 na D6.", "racks": {"show": true, "max": 2, "onlyWithAP": true, "note": "Výstup 'jako racky' jen když varianta používá AP a racky se plně využijí; max. 2 racky (máme dva)."}, "smallSystem": {"maxBoxes": 6, "amp": "D40", "note": "Malá akce: když má hlavní systém (vršky, bez subů) nejvýš maxBoxes reproboxů, použije se pro vršky i suby jeden typ zesilovače (D40), pokud ho katalog (dokumentace d&b) u všech uvádí. Kanály se plní postupně, takže vršky i suby sdílí zesilovač."}, "subsSpareFirst": true}, "channelGrouping": {"rule": "Na jeden kanál jen bedny na stejné pozici (max. perChannel). Každá pozice front-fill, out-fill a delay má vlastní kanál (kvůli delay/zarovnání). Front-fill venku: 2× T10 na pozici = 1 kanál.", "outFillBoxesPerPosition": 1, "delayBoxesPerPosition": 1}, "drumfill": {"options": ["none", "sub", "sub+MAX2", "sub+M4"], "sub": "V-GSUB", "subCount": 1, "topCount": 1, "note": "Drumfill má vlastní kanál pro sub (D80) i pro top. Top se počítá jako odposlech."}, "variants": {"note": "Výsledek = seznam variant (point source modely a rodiny sloupce T/CCL/V). Obchodník vybere.", "recommendHeadroomDb": {"speech": 3, "band": 6}, "recommendRoundingDb": 1, "hideBelowHeadroomDb": 0, "compactPerMount": true, "compactNote": "Přehled ukazuje z každého typu montáže (point source, array, stack, distanční tyč) jen nejmenší variantu s dostatečnou rezervou. Ostatní se zobrazí přepínačem „Zobrazit všechny varianty“.", "hideNote": "Varianty se zaokrouhlenou rezervou pod tuto hodnotu se nenabízí (bez rezervy).", "recommendRoundingNote": "Rezerva se pro štítek doporučeno / na hraně zaokrouhlí na tento krok (1 = celé dB). Na kartě se ukazuje s desetinou.", "labels": {"recommended": "doporučeno (nejmenší s dostatečnou rezervou)", "edge": "na hraně (rezerva pod limitem)", "none": "žádná varianta nemá rezervu → doporučí se ta s největší"}, "deprioritizedMounts": [], "deprioritizedNote": "Y10P je vzdálená možnost, V-Series stack poslední možnost: v přehledu skryté, ve Zobrazit všechny na konci, doporučí se jen, když nic jiného nestačí. Neplatí při ručně zvoleném typu systému.", "deprioritizedVariants": [{"mount": "point", "family": "Y10P"}, {"mount": "stack", "family": "V"}], "oversizedHiddenMounts": ["stack"], "oversizedNote": "Stack větší rodiny, když stačí stack lehčí rodiny: v přehledu skrytý, ve Zobrazit všechny na konci.", "orderNote": "Pořadí karet: doporučená první, pak podle rezervy od nejvyšší, odsunuté varianty na konci.", "preferFamily": [{"program": "band", "outdoor": true, "minDepthM": 40, "family": "V", "note": "Kapela venku na velkou vzdálenost: přednost má V-Series array (praxe: Litoměřice, Žluté lázně), pokud stačí."}, {"program": "band", "outdoor": false, "maxDepthM": 20, "maxStageM": 8, "family": "T", "mount": "stack", "minHeadroomDb": 3, "note": "Kapela uvnitř, malé pódium (do 8 m), délka do 20 m: přednost má T10 stack (105° vyplní šířku plochy), stačí rezerva 3 dB."}]}, "zones": {"note": "Přilehlé prostory: 1 reprobox na každých 100 m² (foyer i vedlejší prostor), min. minBoxes. Každý reprobox je vlastní pozice a má vlastní kanál.", "types": {"foyer": {"label": "Přizvučení foyer / zázemí", "areaPerBoxM2": 100, "minBoxes": 2, "models": {"speech": ["T10"], "band": ["T10"]}}, "outfill": {"label": "Přilehlý prostor jako outfill (vedlejší sál, stan, terasa)", "areaPerBoxM2": 100, "minBoxes": 2, "models": {"speech": ["T10", "Y10P"], "band": ["Y10P", "V7P", "T10"]}}}}, "consultNote": "Návrh pro nacenění. Konečnou sestavu vždy konzultujte se zvukařem (ArrayCalc).", "referenceLevels": {"source": "ArrayCalc V12, Direct sound level SPL, broadband, na ose, výška posluchače 1,7 m, plocha šířka 30 m, rovná podlaha, bez subů; pevná vstupní úroveň. Naměřil Filip 2026-11-09, docs/reference/arraycalc_reference.xlsx.", "note": "Hodnoty jsou při pevné vstupní úrovni, ne maximum. Výkon rodin se dorovnává podle maxSplPeakDb z katalogu: úroveň = měření + (maxSplPeakDb reproboxu − capabilityRefDb). Mezi počty reproboxů a vzdálenostmi se interpoluje (log), za poslední vzdáleností pokles 20·log(d).", "capabilityRefDb": 142, "distancesM": [10, 20, 25, 30, 40, 50, 60, 80], "data": {"array": {"T": {"4": [108, 103, null, 100, 94], "6": [110, 106, null, 104, 98], "8": [111, 106, null, 104, 102], "10": [111, 108, null, 106, 104], "12": [112, 110, null, 108, 106]}, "CCL": {"4": [109, 106, null, 102, 100, 94, 92], "6": [110, 106, null, 106, 104, 102, 100], "8": [112, 110, null, 108, 106, 105, 101], "10": [113, 111, null, 109, 107, 107, 104], "12": [112, 112, null, 112, 109, 108, 106]}, "V": {"4": [110, 106, null, null, 101, null, 98, 94], "6": [110, 107, null, null, 104, null, 100, 97], "8": [111, 110, null, null, 106, null, 104, 99], "10": [114, 111, null, null, 107, null, 105, 102], "12": [116, 112, null, null, 108, null, 105, 102]}}, "pole": {"T": {"3": [107, 101, null, 98, 95]}}, "stack": {"T": {"3": [107, 101, null, 98, 95], "6": [113, 108, null, 104, 101]}, "CCL": {"3": [108, 100, null, 96, 95], "6": [108, 105, null, 101, 99]}, "V": {"4": [113, 108, null, 106, 104]}}, "point": {"Y10P": {"1": [112, 106, 104]}, "V7P": {"1": [112, 107, 105]}}}, "maxFrontBackDropDb": 12, "dropNote": "Rovnoměrnost: úroveň mezi 10 m a poslední řadou smí klesnout nejvýš o maxFrontBackDropDb (podle měření). Kalibrováno na reálné akce: Žluté lázně V8/str na 80 m = 12 dB, Litoměřice 9,5 dB, Sandra 7 dB, Kladno 4,5 dB.", "ccl6Note": "CCL 6/str na 30 m srovnáno na 106 dB (původně 107, vyšlo kvůli úhlování; upraveno podle Filipa)."}, "levelTargetAtBackDb": {"band": 93, "speech": 76, "note": "Cíl na poslední řadě v jednotkách referenčních měření (po dorovnání výkonu rodiny). Kapela kalibrovaná na reálné akce: Žluté lázně (V-Series 8/str, 80 m) = právě limit „doporučeno“ (93 + 6 dB). Mluvené slovo = kapela − 17 dB (stejný rozdíl jako dřívější 112 / 95 dB peak). Venku + outdoorMarginDb."}, "rigging": {"note": "Rigging a příslušenství do soupisu. Kódy d&b z rigging manuálů (T-Series 1.2, CCL 1.3, V-Series 1.12, Z5386, Z5375). T base plate, V base plate (zakázkový), lyry, distanční tyč, VP/YP brackets a VP Flying adapter podle praxe (Filip).", "flown": {"T": [{"item": "T Flying frame (Z5370)", "perSide": 1}], "CCL": [{"item": "CCL Flying frame (Z5820)", "perSide": 1}], "V": [{"item": "V Flying frame (Z5380)", "perSide": 1}]}, "stack": {"T": [{"item": "T Base plate (Z5375)", "perSide": 1, "note": "stack T10 na V-GSUB (M20 příruba): max. 6× T10 na subu (návod Z5375), 1 na stranu"}], "CCL": [{"item": "CCL Pullback frame (Z5824)", "perSide": 1, "note": "stack CCL na V-GSUB, 1 na stranu (manuál CCL: Pullback frame na V-GSUB)"}], "V": [{"item": "V base plate (zakázkový)", "perSide": 1, "note": "stack V-Series na V-GSUB, 1 na stranu (vlastní výroba, obdoba T Base plate)"}]}, "pole": {"T": [{"item": "Lyra Line/Arc pro T10", "perSide": 1, "note": "3× T10 v arc, 1 na stranu"}, {"item": "Distanční tyč na V-GSUB", "perSide": 1, "note": "1 na stranu"}]}, "pointSourcePS": [{"item": "Lyra PS pro T10", "perBox": 1, "note": "T10 na výšku (PS) pro delay a out-fill, 1 na reprobox"}, {"item": "Stativ", "perBox": 1, "note": "pro T10 PS (delay, out-fill), 1 na reprobox"}], "point": {"V7P": {"onSub": [{"item": "Distanční tyč na V-GSUB", "note": "V7P na V-GSUB, 1 na reprobox", "perBox": 1}], "stand": [{"item": "Stativ", "perBox": 1, "note": "1 na reprobox"}, {"item": "VP mounting bracket", "perBox": 1, "note": "V7P na stativ, 1 na reprobox"}], "flown": [{"item": "VP Flying adapter", "perBox": 1, "note": "věšení V7P, 1 na reprobox"}]}, "Y10P": {"onSub": [{"item": "Distanční tyč na V-GSUB", "note": "Y10P na V-GSUB, 1 na reprobox", "perBox": 1}], "stand": [{"item": "Stativ", "perBox": 1, "note": "1 na reprobox"}, {"item": "YP Swivel bracket", "perBox": 1, "note": "Y10P na stativ, 1 na reprobox"}]}}}, "coverage": {"nearDepthShare": 0.25, "nearMinM": 5, "note": "Horizontální pokrytí jedné strany main PA (reproboxy na hranách pódia, od středu plochy po okraj): vzadu v celé délce proti nejužšímu reproboxu (V8, CCL8 80°), vpředu ve čtvrtině délky (min. 5 m) proti nejširšímu (V12, CCL12 120°, T10 105°). Když nestačí, přidá se out-fill 1 pozice na stranu.", "overspill": {"indoorOnly": true, "maxExcessDeg": 15, "note": "Uvnitř: vnější polovina vyzařování reproboxu, který hraje do dálky (u arraye nejužší V8/CCL8 80°, T10 105°, samostatné reproboxy po jednom), proti úhlu k boční stěně v přední zóně. Upozornění dostane varianta, která přesahuje o víc než maxExcessDeg a zároveň o víc než relativeDeg víc než nejužší vyhovující varianta (ta je uvedená jako užší alternativa, včetně delay, pokud je potřeba). Taková varianta se doporučí až po variantách bez přesahu. Složení arraye se nemění.", "relativeDeg": 10}}};
+// d&b konfigurátor – výpočetní engine (port docs/prototype_engine.py)
+function makeEngine(cat, R) {
+  const LS = Object.fromEntries(cat.loudspeakers.map(l => [l.id, l]));
+  const AMPS = Object.fromEntries(cat.amplifiers.map(a => [a.id, a]));
+  const AMP_IDS = cat.amplifiers.map(a => a.id);
+  const G = R.arrayGainFactorDb, lg = Math.log10, ceil = Math.ceil;
+  const SIDES = ['L', 'P'];
+  // České skloňování: 1 pozice, 2–4 pozice, 5 pozic.
+  const pl = (n, one, few, many) => n === 1 ? one : (n >= 2 && n <= 4 ? few : many);
+  const dec = x => String(x).replace('.', ',');
+  // Bedna, která umí point source (T10), se jako delay staví na výšku (PS).
+  const psNote = m => LS[m] && LS[m].alsoPointSource ? ' · point source (PS)' : '';
+  const markPS = (o, m) => { if (LS[m] && LS[m].alsoPointSource) o.ps = true; };
+  // Rozdělí n beden na k kanálů co nejrovnoměrněji.
+  const split = (n, k) => Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0));
+  // Úroveň na ose ve vzdálenosti d (m) podle referenčních měření z ArrayCalc (rules.referenceLevels).
+  // Mezi vzdálenostmi i počty reproboxů interpolace v log měřítku, za poslední vzdáleností pokles 20·log(d).
+  // Výkon rodiny se dorovná podle maxSplPeakDb z katalogu. null = pro daný systém data nejsou.
+  const RL = R.referenceLevels;
+  function refLevel(kind, key, n, d, model) {
+    const tab = RL && RL.data[kind] && RL.data[kind][key];
+    if (!tab || !LS[model] || LS[model].maxSplPeakDb == null) return null;
+    const Ds = RL.distancesM, x = Math.max(d, 1);
+    const atRow = row => {
+      const pts = row.map((v, i) => [Ds[i], v]).filter(p => p[1] != null);
+      if (x <= pts[0][0]) return pts[0][1];
+      for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) {
+        const [d0, v0] = pts[i - 1], [d1, v1] = pts[i];
+        return v0 + (v1 - v0) * (lg(x) - lg(d0)) / (lg(d1) - lg(d0));
+      }
+      const [dl, vl] = pts[pts.length - 1]; return vl - 20 * lg(x / dl);
+    };
+    const ns = Object.keys(tab).map(Number).sort((a, b) => a - b);
+    let v;
+    if (tab[n]) v = atRow(tab[n]);
+    else if (ns.length === 1) v = atRow(tab[ns[0]]) + G * lg(n / ns[0]);
+    else {
+      let i = ns.findIndex(k => k > n); i = i === -1 ? ns.length - 1 : Math.max(i, 1);
+      const n0 = ns[i - 1], n1 = ns[i], v0 = atRow(tab[n0]), v1 = atRow(tab[n1]);
+      v = v0 + (v1 - v0) * (lg(n) - lg(n0)) / (lg(n1) - lg(n0));
+    }
+    return v + (LS[model].maxSplPeakDb - RL.capabilityRefDb);
+  }
+  // Nejdelší změřená vzdálenost pro systém (dosah, za který se s měřením nejde).
+  function refMaxDist(kind, key) {
+    const tab = RL && RL.data[kind] && RL.data[kind][key]; if (!tab) return null;
+    return Math.max(...Object.values(tab).map(row => RL.distancesM[row.reduce((m, v, i) => v != null ? i : m, 0)]));
+  }
+
+  function design(ev, retry = true, onlyFamily = null, onlyPoint = null) {
+    const out = [], warn = [], info = [];
+    const take = (m, n, catg, groups, why) => { out.push({ m, n, catg, groups, why }); return true; };
+    const takeFirst = (models, n, catg, groups, why) => { take(models[0], n, catg, groups, why); return models[0]; };
+    const prog = ev.program;
+    const T = R.targetPeakSplAtBackDb[prog] + (ev.outdoor ? R.outdoorMarginDb : 0);
+    // Cíl pro hlavní systém v jednotkách referenčních měření (když jsou k dispozici).
+    const TL = (RL && R.levelTargetAtBackDb ? R.levelTargetAtBackDb[prog] : R.targetPeakSplAtBackDb[prog]) + (ev.outdoor ? R.outdoorMarginDb : 0);
+    const VR = R.variants, recH = VR.recommendHeadroomDb[prog], stepH = VR.recommendRoundingDb || 0;
+    const okHeadroom = h => (stepH ? Math.round(h / stepH) * stepH : h) >= recH;
+    // Počet lidí se odvozuje z plochy (audienceDensityPerM2), pokud není zadán.
+    // Pokryje delay zbytek plochy za dosahem systému? (fills.delay.maxLines × lineReachM)
+    // Horizontální pokrytí jedné strany (reproboxy na hranách pódia, od středu plochy po její okraj) ve vzdálenosti d, ve stupních.
+    // Kontroluje se vzadu (celá délka) a vpředu (nearDepthShare délky, min. nearMinM) – rules.coverage.
+    const COV = R.coverage || {};
+    const angAt = d => { const Sw = Math.min(ev.stageWidth || R.fills.frontFill.defaultStageWidthM, ev.width);
+      return (Math.atan(Math.max(0, ev.width / 2 - Sw / 2) / d) + Math.atan((Sw / 2) / d)) * 180 / Math.PI; };
+    const needFar = () => angAt(Math.max(ev.depth, R.firstRowDistanceM));
+    const needNear = () => angAt(Math.max(ev.depth * (COV.nearDepthShare ?? 0.25), COV.nearMinM ?? 5));
+    const needHDeg = () => Math.max(needFar(), needNear());
+    // Vyzařování hlavního systému na stranu: vzadu hraje nejužší reprobox (V8, CCL8), vpředu nejširší (V12, CCL12);
+    // samostatné reproboxy se násobí počtem na stranu (vějíř).
+    const mainDisps = () => out.filter(o => o.why === 'Main').map(o => (LS[o.m].dispersionH || 0) * (o.catg === 'main_point' ? o.n / 2 : 1)).filter(Boolean);
+    const mainHDisp = () => { const d = mainDisps(); return d.length ? Math.min(...d) : null; };
+    const mainHDispNear = () => { const d = mainDisps(); return d.length ? Math.max(...d) : null; };
+    const covers = () => { const f = mainHDisp(), n = mainHDispNear(); return !f || (needFar() <= f && needNear() <= n); };
+    // Příslušenství pro reproboxy na výšku jako point source (T10 PS): lyra PS + stativ na každý reprobox.
+    const addPsRig = (m, n) => { if (!(LS[m] && LS[m].alsoPointSource)) return; for (const it of (R.rigging || {}).pointSourcePS || []) { take(it.item, n * (it.perBox || 1), 'rig', 1, 'Rigging'); out[out.length - 1].note = it.note || `pro ${m} PS, ${it.perBox || 1} na reprobox`; } };
+    const rigAllowed = ev.rigAllowed ?? !!ev.rig; // lze věšet (i když se právě počítá varianta na zemi)
+    const DL = R.fills.delay, delayCovers = mt => DL.maxLines == null || !DL.lineReachM || D <= mt + DL.lineReachM * DL.maxLines;
+    const people = ev.people ?? Math.round(ev.width * ev.depth * R.audienceDensityPerM2);
+    const W = ev.width, D = ev.depth, dB = Math.hypot(D, W / 4), dF = R.firstRowDistanceM, flown = ev.rig;
+    let stackFam = null;
+    let fam = null, maxThrow = null, baseSub = false, ffPos = 0, headroom = null, subPos = null, cfgSub = null, subAlts = [];
+    let typ = ev.type || 'auto'; const apReq = !!ev.ap, AP = R.arrayProcessing; let ap = false, setup = '';
+    if (typ === 'auto') {
+      const a = R.systemType.autoPointSourceWhen;
+      typ = (a.program.includes(prog) && D <= a.maxDepthM && !apReq) ? 'point' : 'column';
+    }
+    if (typ === 'column') {
+      // Minimum z tabulky hloubek pro program, mezi řádky lineárně proložené (null = rodina nad dosah).
+      const tableMinAt = fk => {
+        const rows = ((R.lineArray.depthTableByProgram || {})[prog] || R.lineArray.depthTable).rows;
+        const ri = rows.findIndex(x => D <= x.maxDepthM), nt = rows[ri][fk];
+        if (nt == null) return null;
+        if (ri === 0 || rows[ri - 1][fk] == null) return nt;
+        const d0 = rows[ri - 1].maxDepthM, v0 = rows[ri - 1][fk];
+        return Math.round(v0 + (nt - v0) * Math.min(1, (D - d0) / (rows[ri].maxDepthM - d0)));
+      };
+      const LA = R.lineArray;
+      const order = onlyFamily ? [onlyFamily] : LA.familyOrder;
+      let found = false;
+      // Na zemi: 'stack' = pole na rigingu (frame) na zemi / na subech, 'pole' = L/R mix top/sub, arc na distanční tyči.
+      const pole = !flown && ev.ground === 'pole';
+      const noThrowDelay = !(R.fills.delay.throwDelayPrograms || ['speech', 'band']).includes(prog);
+      for (let i = 0; i < order.length; i++) {
+        const fk = order[i], f = LA.families[fk], last = i === order.length - 1;
+        if (pole && !f.pole) { if (onlyFamily) return null; continue; }
+        let reach = pole ? f.pole.maxThrowM : f.maxThrowM;
+        if (D > reach && !last && !onlyFamily) continue;
+        let maxN = flown ? f.maxFlownPerSide : pole ? f.pole.perSide : f.maxGroundPerSide;
+        let rigNote = '';
+        if (flown) {
+          // Výška arraye: do standardní výšky rigování max. maxPerSideUpToStandard, výš až limit výrobce;
+          // spodní hrana arraye nejméně minBottomEdgeM nad zemí (výška reproboxu z katalogu, rovný sloupec).
+          const FH = LA.flownHeight, rigH = ev.rigHeight || FH.standardRigHeightM;
+          const hMm = Math.max(LS[f.narrow].heightMm || 0, LS[f.wide].heightMm || 0);
+          if (!hMm) warn.push(`Výška ${f.narrow}/${f.wide} chybí v katalogu, výšku arraye nejde zkontrolovat.`);
+          const fit = hMm ? Math.floor((rigH - FH.minBottomEdgeM) * 1000 / hMm) : Infinity;
+          const base = rigH <= FH.standardRigHeightM ? FH.maxPerSideUpToStandard : f.maxFlownPerSide;
+          maxN = Math.min(base, fit, f.maxFlownPerSide);
+          rigNote = `rigging ${dec(rigH)} m, spodní hrana min. ${dec(FH.minBottomEdgeM)} m nad zemí`;
+          if (maxN < f.minPerSide) { if (onlyFamily) return null; continue; }
+        }
+        // Kapela: delay kvůli dosahu se nepřidává (raději větší main PA), rezerva se počítá až k poslední řadě.
+        // Věšený array s referenčními daty se zvětšuje místo delay (delay jen tam, kde nejde věšet).
+        const kind = flown ? 'array' : pole ? 'pole' : 'stack';
+        const useRef = refLevel(kind, fk, pole ? f.pole.perSide : f.minPerSide, 10, f.narrow) != null;
+        // Dosah systému na zemi = nejdelší změřená vzdálenost (u tyče nejvýš pole.maxThrowM); za ním delay.
+        if (!flown && useRef) reach = pole ? Math.min(f.pole.maxThrowM, refMaxDist(kind, fk)) : refMaxDist(kind, fk);
+        // Mluvené slovo na zemi: dosah main PA pevně SG.reachM (30 m), delay od něj; výjimka T10 stack s ≥ SG.fullReachFromPerSide na stranu (dosah z měření).
+        const SG = !flown && !noThrowDelay ? R.fills.delay.speechGround : null;
+        if (SG && !pole) reach = Math.min(reach, SG.reachM);
+        // Věšený array jen do změřené vzdálenosti (kromě největší rodiny), větší délka = větší rodina.
+        if (flown && useRef && D > refMaxDist(kind, fk) && fk !== LA.familyOrder[LA.familyOrder.length - 1]) { if (onlyFamily) return null; continue; }
+        const spl = LS[f.narrow].maxSplPeakDb, dE = (noThrowDelay || (flown && useRef)) ? (useRef ? D : dB) : Math.min(useRef ? D : dB, reach);
+        // Úroveň vzadu a rezerva pro k reproboxů na stranu (měření ArrayCalc, jinak dřívější vzorec).
+        const lvl = k => { const r = refLevel(kind, fk, k, dE, f.narrow); return r != null ? r : spl + G * lg(k) - 20 * lg(dE) - T + TL; };
+        // Rovnoměrnost (pokrytí do hloubky): úroveň mezi 10 m a poslední řadou nesmí klesnout víc než maxFrontBackDropDb.
+        const dropOk = k => !useRef || RL.maxFrontBackDropDb == null || dE <= 10 || refLevel(kind, fk, k, 10, f.narrow) - refLevel(kind, fk, k, dE, f.narrow) <= RL.maxFrontBackDropDb;
+        const okN = k => okHeadroom(lvl(k) - TL) && dropOk(k);
+        let n = f.minPerSide, tabDelay = false, tableN = null, flownAtMax = false;
+        if (pole) {
+          n = f.pole.perSide;
+          // Tyč nejde rozšířit do stran: když plocha potřebuje víc než vyzařování reproboxu (T10 105°), nenabízí se.
+          const disp = LS[f.narrow].dispersionH;
+          if (disp && needHDeg() > disp) { if (onlyFamily) return null; continue; } // vpředu i vzadu
+        }
+        else if (flown && useRef) {
+          // Věšený array: od minima rodiny přidávat reproboxy, dokud rezerva nedosáhne limitu „doporučeno“, nejvýš maxN.
+          n = f.minPerSide;
+          while (n < maxN && !okN(n)) n++;
+          flownAtMax = n >= maxN && !okN(n);
+        }
+        else if (flown) {
+          // Věšený array: tabulka hloubek dává strop pro danou hloubku.
+          const rows = ((LA.depthTableByProgram || {})[prog] || LA.depthTable).rows, ri = rows.findIndex(x => D <= x.maxDepthM), row = rows[ri];
+          const nt = row[fk];
+          if (nt == null) { if (onlyFamily) return null; continue; }
+          tableN = nt; n = Math.max(nt, f.minPerSide); tabDelay = row.delay || (row.delayFor || []).includes(fk);
+          if (LA.depthTable.growWithinStep) {
+            // Plynule: mezi kroky tabulky lineárně proložit (po 1 reproboxu na stranu), pak přidat podle potřebné rezervy až do hodnoty tabulky.
+            let prev = nt;
+            if (ri > 0 && rows[ri - 1][fk] != null) {
+              const d0 = rows[ri - 1].maxDepthM, v0 = rows[ri - 1][fk], d1 = row.maxDepthM;
+              prev = Math.round(v0 + (nt - v0) * Math.min(1, (D - d0) / (d1 - d0)));
+            }
+            const V = R.variants, rec = V.recommendHeadroomDb[prog], step = V.recommendRoundingDb || 0;
+            const dEf = noThrowDelay ? dB : Math.min(dB, reach);
+            const ok = k => { const h = spl + G * lg(k) - 20 * lg(dEf) - T; return (step ? Math.round(h / step) * step : h) >= rec; };
+            // Program s countBy "headroom" (mluvené slovo): od minima jen podle hlasitosti, tabulka je strop.
+            const PT = (LA.depthTableByProgram || {})[prog] || {};
+            // Jen podle hlasitosti do headroomOnlyUpToM; dál tabulka (plynule) jako minimum kvůli dosahu do hloubky.
+            const byHeadroom = PT.countBy === 'headroom' && (PT.headroomOnlyUpToM == null || D <= PT.headroomOnlyUpToM);
+            let k = byHeadroom ? f.minPerSide : Math.max(prev, f.minPerSide);
+            while (k < nt && !ok(k)) k++;
+            n = k;
+          }
+          // Kapela: rodina, která by potřebovala delay, se nenabízí, když existuje větší rodina.
+          if (noThrowDelay && tabDelay && fk !== LA.familyOrder[LA.familyOrder.length - 1]) { if (onlyFamily) return null; continue; }
+        }
+        let stackAtMax = false;
+        if (!flown && !pole) {
+          // Stack: od minGroundPerSide přidávat bedny podle potřeby (rezerva pro „doporučeno“), nejvýš maxGroundPerSide.
+          const V = R.variants, rec = V.recommendHeadroomDb[prog], step = V.recommendRoundingDb || 0;
+          const ok = okN;
+          n = f.minGroundPerSide ?? f.minPerSide;
+          // Kapela: stack v plné konfiguraci.
+          if ((LA.groundStack.fullForPrograms || []).includes(prog)) n = maxN;
+          while (n < maxN && !ok(n)) n++;
+          stackAtMax = n >= maxN && !ok(n);
+          n = Math.min(n, maxN);
+          // Bez možnosti věšet se zbytek délky kryje linkami delay (viz fills.delay), stack se kvůli délce nezvětšuje.
+        }
+        let flownCapped = false;
+        if (flown && n > maxN) { n = maxN; flownCapped = true; }
+        const lim = maxN;
+        const apOk = apReq && flown && AP.supportedModels.includes(f.narrow) && AP.supportedModels.includes(f.wide) && lim >= AP.minPerSide;
+        if (apOk) n = Math.max(n, AP.minPerSide);
+        if (apReq && !apOk && !last) continue;
+        if (n > lim && !last && !onlyFamily) continue;
+        if (n > lim) return null;
+        fam = fk; ap = apOk;
+        if (SG && !pole && fk === SG.fullReachFamily && n >= SG.fullReachFromPerSide && useRef) reach = refMaxDist(kind, fk);
+        maxThrow = (noThrowDelay && !tabDelay) || (flown && useRef) ? Infinity : !flown ? reach : (tabDelay ? D - 0.01 : Math.max(D, f.maxThrowM));
+        // Kapela uvnitř bez věšení: stack na hraně se může použít, doporučí se k němu delay
+        // od vzdálenosti, kam stack ještě dohraje s rezervou a rovnoměrností (rules.fills.delay.bandIndoorStack).
+        let edgeDelay = false;
+        const BS = R.fills.delay.bandIndoorStack;
+        if (BS && !flown && !pole && noThrowDelay && !ev.outdoor && !rigAllowed && useRef && (BS.families || []).includes(fk) && !okN(n)) {
+          let dOk = 0;
+          for (let d = 10; d <= D; d++) {
+            const h = refLevel(kind, fk, n, d, f.narrow) - TL, dr = refLevel(kind, fk, n, 10, f.narrow) - refLevel(kind, fk, n, d, f.narrow);
+            if (okHeadroom(h) && (RL.maxFrontBackDropDb == null || dr <= RL.maxFrontBackDropDb)) dOk = d;
+          }
+          if (dOk >= BS.minMainReachM && dOk < D) { maxThrow = dOk; edgeDelay = true; stackAtMax = false; }
+        }
+        // Delay kvůli dosahu: jen maxLines linií, každá dosáhne lineReachM. Když nestačí, rodina se nenabízí (je potřeba větší main PA).
+        if (!flown && isFinite(maxThrow) && !delayCovers(maxThrow)) { if (onlyFamily) return null; continue; }
+        // Delay dává smysl jen tam, kde nejde věšet: když věšet lze, systém na zemi s delay se nenabízí.
+        if (!flown && rigAllowed && isFinite(maxThrow) && D > maxThrow) { if (onlyFamily) return null; continue; }
+        if (flownCapped) warn.push(`Array je omezený na ${n} reproboxů na stranu (${rigNote}).`);
+        if (apReq && !ap && retry) {
+          const r = design({ ...ev, ap: false }, false, onlyFamily, onlyPoint);
+          if (r) r.warn.unshift('AP není možné (jen věšený array z podporovaných reproboxů, min. 6 na stranu) → návrh bez AP');
+          return r;
+        }
+        let nn, nw;
+        if (f.narrow === f.wide) { nn = n; nw = 0; } else { nw = Math.min(LA.wideBottomPerSide, n); nn = n - nw; }
+        headroom = (edgeDelay ? refLevel(kind, fk, n, maxThrow, f.narrow) : lvl(n)) - TL;
+        if (edgeDelay) warn.push(`${f.narrow === f.wide ? f.narrow : fk} stack je na celou délku ${dec(D)} m na hraně – doporučen delay od ${dec(maxThrow)} m (rezerva se pak počítá do ${dec(maxThrow)} m).`);
+        setup = ap ? 'AP' : '';
+        const how = flown ? 'věšený array' : pole ? 'arc na distanční tyči (mix top/sub)' : 'stack na rigingu na V-GSUB';
+        if (nn) take(f.narrow, nn * 2, 'main_la', 2, 'Main');
+        if (nw) take(f.wide, nw * 2, 'main_la', 2, 'Main');
+        const src = flown && useRef ? ` · počet podle rezervy a rovnoměrnosti do ${dec(D)} m, max. ${maxN} na stranu` : flown ? ` · tabulka podle délky plochy (${dec(D)} m): max. ${tableN} na stranu, počet podle potřebné rezervy` : !pole ? ` · stack ${f.minGroundPerSide ?? f.minPerSide}–${maxN} reproboxů na stranu podle potřebné rezervy` : '';
+        out.forEach(o => { if (o.why === 'Main') o.note = (nw ? `${n} na stranu: ${nn}× ${f.narrow} nahoře, ${nw}× ${f.wide} ve spodní části` : `${n} na stranu`) + ` · ${how}` + (setup ? ` · ${setup}` : "") + src; });
+        if (flownAtMax) warn.push(`Array je na maximu ${maxN} reproboxů na stranu (${rigNote}) a nemá dostatečnou rezervu.`);
+        if (stackAtMax) {
+          out.forEach(o => { if (o.why === 'Main') o.note += ` · stack na maximu ${maxN} reproboxů na stranu (limit stacku na V-GSUB)`; });
+          warn.push(`Stack je na limitu ${maxN} reproboxů na stranu a nemá dostatečnou rezervu. Zvažte věšený array.`);
+        }
+        if (flown && f.flown) {
+          // Limity věšení z rigging manuálu d&b.
+          const L = f.flown, wN = LS[f.narrow].weightKg, wW = LS[f.wide].weightKg;
+          if (wN == null || wW == null) warn.push(`Hmotnost ${f.narrow}/${f.wide} chybí v katalogu, zatížení věšení nejde zkontrolovat.`);
+          else {
+            const kg = Math.round((nn * wN + nw * wW) * 10) / 10;
+            if (L.freeSplayMaxCabinets && (n > L.freeSplayMaxCabinets || kg > L.freeSplayMaxKg))
+              warn.push(`Věšený array ${n} reproboxů / ${kg} kg na stranu: nad ${L.freeSplayMaxCabinets} reproboxů nebo ${L.freeSplayMaxKg} kg je nutná kontrola zatížení v ArrayCalc (manuál d&b).`);
+            if (kg + L.frameKg > L.swlKg)
+              warn.push(`Věšený array ${kg} kg + flying frame ${L.frameKg} kg na stranu překračuje SWL ${L.swlKg} kg (manuál d&b).`);
+          }
+        }
+        if (pole) { take(f.pole.sub, f.pole.subsPerSide * 2, 'sub', 2, 'Suby (podstavec)'); out.forEach(o => { if (o.why === 'Main') o.note += ` · horizontální pokrytí na stranu: vpředu ${Math.round(needNear())}°, vzadu ${Math.round(needFar())}°, ${f.narrow} vyzařuje ${LS[f.narrow].dispersionH}°`; }); out[out.length - 1].note = `${f.narrow} na distanční tyči na ${f.pole.sub} (${f.pole.subsPerSide} na stranu)`; baseSub = true; }
+        stackFam = !flown && !pole ? f : null;
+        // Rigging a příslušenství (rules.rigging): flying frame, stack frame / pullback frame, lyra a distanční tyč.
+        const RG = (R.rigging || {})[flown ? 'flown' : pole ? 'pole' : 'stack'];
+        for (const it of (RG && RG[fk]) || []) { take(it.item, (it.perSide || 1) * 2, 'rig', 2, 'Rigging'); out[out.length - 1].note = it.note || (flown ? 'věšený array' : pole ? 'tyč na V-GSUB' : 'stack na V-GSUB') + `, ${it.perSide || 1} na stranu`; }
+        found = true; break;
+      }
+      if (!found) return null;
+    } else {
+      const P = R.pointSource, SGp = R.fills.delay.speechGround; maxThrow = (SGp && prog === 'speech') ? SGp.reachM : P.maxThrowM; fam = 'point';
+      if (!delayCovers(maxThrow)) return null;
+      // Delay jen když nejde věšet (věšený V7P bez delay); výjimka: úzký malý prostor uvnitř (pointSource.delayInNarrowSpace).
+      if ((rigAllowed || ev.pointFlown) && D > maxThrow && (ev.pointFlown || !narrowSpace(ev))) return null;
+      let ok = false;
+      for (const md of P.models[prog].filter(x => !onlyPoint || x.id === onlyPoint)) {
+        const m = md.id, spl = md.mode === 'point' ? (LS[m].maxSplPeakDbPoint ?? LS[m].maxSplPeakDb) : LS[m].maxSplPeakDb;
+        const useRef = refLevel('point', m, 1, 10, m) != null, dE = Math.min(useRef ? D : dB, maxThrow);
+        // Měření ArrayCalc už obsahuje pár L/P; jinak dřívější vzorec.
+        const lvl = per => { const r = refLevel('point', m, per, dE, m); return r != null ? r : spl + P.pairSumDb + P.columnGainFactorDb * lg(per) - 20 * lg(dE) - T + TL; };
+        // Víc než 1 na stranu jen na široké ploše (pointSource.widePairs): reproboxy rozmístěné po šířce, každý na vlastním subu.
+        const WP = P.widePairs, maxPer = (!WP || (W >= WP.minWidthM && D >= WP.minLengthM)) ? md.maxPerSide : 1;
+        let per = 1;
+        while (lvl(per) < TL && per < maxPer) per++;
+        if (lvl(per) < TL) continue;
+        // Horizontální pokrytí: jedna strana (na hraně pódia) pokrývá od středu plochy po její okraj, vztaženo k polovině délky.
+        // Potřebný úhel proti vyzařování z katalogu (dispersionH) → kolik reproboxů na stranu je potřeba kvůli šířce.
+        const needDeg = needHDeg();
+        const disp = LS[m].dispersionH, perH = disp ? ceil(needDeg / disp) : 1;
+        if (!disp) warn.push(`Horizontální vyzařování ${m} chybí v katalogu, šířku plochy nejde zkontrolovat.`);
+        per = Math.min(Math.max(per, perH), maxPer);
+        take(m, per * 2, 'main_point', 2, 'Main'); out[out.length - 1].note = `${per} na stranu · horizontální pokrytí na stranu: vpředu ${Math.round(needNear())}°, vzadu ${Math.round(needFar())}°, ${m} vyzařuje ${disp ?? '?'}°`
+          + (per > 1 ? ` → ${per} reproboxy na stranu rozmístěné rovnoměrně po šířce (plocha od ${WP.minWidthM} m šířky a ${WP.minLengthM} m délky)` : perH > per ? ' → šířku doplní out-fill' : '');
+        if (per > 1) out[out.length - 1].spread = per;
+        headroom = lvl(per) - TL; ok = true; setup = ''; break;
+      }
+      if (!ok) return null;
+    }
+    // --- suby ---
+    const S = R.subs;
+    const GS = R.lineArray.groundStack;
+    if ((prog === 'band' || people > S.speechSubsWhenAudienceOver || stackFam) && !(baseSub && prog === 'speech')) {
+      const Ts = T + R.subExtraDb[prog];
+      const m = S.byFamily[fam];
+      let n = S.minPerSide;
+      while (LS[m].maxSplPeakDb + 20 * lg(n * 2) - 20 * lg(dB) < Ts && n < S.maxPerSide) n++;
+      const flownMain = flown && typ === 'column'; // samostatné reproboxy stojí na zemi i při povoleném věšení
+      const cfg = (flownMain && prog === 'band') ? 'subArray' : (flownMain ? 'speechFlown' : 'mixTopSub'); cfgSub = cfg;
+      const tops = out.filter(x => x.why === 'Main').reduce((s, x) => s + x.n, 0);
+      if (prog === 'band') {
+        const ratio = S.minRatioBand[cfg === 'subArray' ? 'subArray' : 'mixTopSub'][fam] ?? 0.5;
+        n = Math.max(n, ceil(tops * ratio / 2));
+        const mt = (S.minTotalBand || {})[fam];
+        if (mt && flownMain) n = Math.max(n, ceil(mt / 2));
+      } else {
+        const sp = S.speech; n = Math.min(Math.max(1, n), sp.maxPerSide);
+        if (flownMain && fam === 'T' && tops / 2 >= sp.flownT10From) n = Math.max(n, sp.flownT10Min / 2);
+      }
+      if (stackFam && GS) n = Math.max(n, GS.minSubsPerSide); // stack stojí vždy na V-GSUB
+      const mp = out.find(x => x.why === 'Main' && x.spread), posPerSide = mp ? mp.spread : 1;
+      if (mp) n = Math.max(n, mp.spread); // rozmístěné samostatné reproboxy: každý na vlastním subu
+      if (cfg !== 'subArray' && S.maxPerPosition && n > S.maxPerPosition * posPerSide) {
+        n = S.maxPerPosition * posPerSide;
+      }
+      const C = S.comboSubarray; let kslN = 0;
+      if (prog === 'band' && cfg === 'subArray') {
+        const w = C.when[ev.outdoor ? 'outdoor' : 'indoor'];
+        if (D > w.depthOverM || people > w.orPeopleOver) {
+          let k = ceil(n * 2 / C.count.perVGSUB); if (C.count.even && k % 2) k++;
+          kslN = Math.min(C.count.max ?? Infinity, Math.max(C.count.min, k));
+        }
+      }
+      const tot = n * 2;
+      let note;
+      if (cfg === 'subArray') {
+        const per = tot <= S.configurations.subArray.maxSinglePerPositionCount ? 1 : 2;
+        subPos = ceil(tot / per); note = `subarray před pódiem: ${subPos} ${pl(subPos, "pozice", "pozice", "pozic")}, ${per} ${pl(per, "sub", "suby", "subů")} na pozici`;
+      } else { subPos = 2; note = mp ? `${n}× ${m} na stranu, pod každým ${mp.m} jeden (mix TOP/SUB)` : cfg === 'mixTopSub' ? `${n}× ${m} na stranu u hlavních reproboxů (mix TOP/SUB)` : `L/P pod věšeným arrayem: ${n} na stranu`; }
+      take(m, tot, 'sub', 2, 'Suby'); out[out.length - 1].note = note;
+      if (stackFam && cfg === 'mixTopSub') {
+        out[out.length - 1].note = `pod stackem: ${n}× ${m} na stranu, top reproboxy na rigingu na ${m}`;
+        const maxTot = stackFam.maxGroundTotalWithSubs;
+        if (maxTot && tops / 2 + n > maxTot) warn.push(`Smíšený stack: ${tops / 2} top + ${n} sub na stranu = ${tops / 2 + n}, manuál d&b dovoluje max. ${maxTot} kusů celkem. Část subů postavte vedle stacku.`);
+      }
+      if (kslN) { take('KSL-SUB', kslN, 'sub', 2, 'Suby'); out[out.length - 1].note = `2. řada subarray za V-GSUB (${C.mode}, volitelně ${C.optionalMode})`; }
+      const Rp = C.replacement;
+      if (m === 'V-GSUB' && Rp.showAsOutput && cfg === 'subArray') { // záměna jen u subarray
+        for (const k of Rp.steps) {
+          const v = tot - k * Rp.vgsub / Rp.ksl; if (v < 0) break;
+          if (k + kslN > (C.count.max ?? Infinity)) break; // KSL-SUB nejvýš count.max kusů i v záměně
+          subAlts.push({ text: `${v}× V-GSUB + ${k + kslN}× KSL-SUB`, amps: (() => { const a = k * Rp.vgsub / Rp.ksl / 2, b = k * 2; return `o ${a} ${pl(a, "kanál", "kanály", "kanálů")} D80 méně, o ${b} ${pl(b, "kanál", "kanály", "kanálů")} D40 více`; })() });
+        }
+      }
+    }
+    // Rigging samostatných reproboxů (rules.rigging.point): věšený (VP Flying adapter), na subu s distanční tyčí, jinak stativ s držákem.
+    if (fam === 'point') {
+      const mo = out.find(o => o.why === 'Main'), RP = ((R.rigging || {}).point || {})[mo.m] || {};
+      const onSub = out.some(o => o.why === 'Suby') && !ev.pointFlown;
+      const opt = ev.pointFlown ? RP.flown : onSub ? RP.onSub : RP.stand;
+      for (const it of opt || []) { take(it.item, (it.perBox ? mo.n * it.perBox : (it.perSide || 1) * 2), 'rig', 2, 'Rigging'); out[out.length - 1].note = it.note || ''; }
+      if (!opt) warn.push(`Rigging pro ${mo.m} chybí v pravidlech (rules.rigging.point).`);
+      mo.note += ev.pointFlown ? ' · věšený' : onSub ? ' · na V-GSUB s distanční tyčí' : ' · na stativu';
+    }
+    // --- filly ---
+    const F = R.fills, env = ev.outdoor ? 'outdoor' : 'indoor';
+    const FF = F.frontFill, SW = ev.stageWidth || FF.defaultStageWidthM; let pos = 0, ffNote = '', ffOptional = false;
+    // Front-fill: počet pozic jen podle šířky pódia.
+    if (SW <= FF.smallStageMaxM) {
+      // Malé pódium: front-fill jen pro programy z smallStagePrograms (kapela).
+      if ((FF.smallStagePrograms || ['band', 'speech']).includes(prog)) {
+        pos = FF.smallStageMinPositions; ffNote = `pódium do ${FF.smallStageMaxM} m: ${pos} ${pl(pos, "pozice", "pozice", "pozic")}`;
+        if (FF.smallStageOptional) ffOptional = 'malé pódium';
+      }
+    } else {
+      // Pozice rovnoměrně po hraně pódia s polovičním odsazením od krajů (rohy pokrývá main PA): 1 na každé celé spacingM m, min. 2.
+      pos = Math.max(FF.smallStageMinPositions || 2, Math.floor(SW / FF.spacingM));
+      ffNote = `pódium ${dec(SW)} m: ${pos} ${pl(pos, "pozice", "pozice", "pozic")} po ${dec(+(SW / pos).toFixed(1))} m, rovnoměrně po hraně pódia mimo rohy`;
+      if (prog === 'speech' && FF.speechLargeStageOptional) ffOptional = 'konference se širokým pódiem';
+    }
+    // Subarray: když mají pozice V-GSUB rozestup nad onSubArrayWhenSpacingOverM, front-filly se položí na suby (pozice = pozice subů).
+    if (pos && subPos > 1 && cfgSub === 'subArray' && FF.onSubArrayWhenSpacingOverM != null) {
+      const gap = SW / (subPos - 1);
+      if (gap > FF.onSubArrayWhenSpacingOverM) {
+        pos = subPos;
+        ffNote = `položené na subarray V-GSUB: ${pos} ${pl(pos, "pozice", "pozice", "pozic")}, rozestup ${dec(gap.toFixed(1))} m`;
+      }
+    }
+    // Front-fill ke zvážení: do návrhu jen když ho obchodník přidá (ev.addOptionalFF), jinak jen upozornění.
+    let ffOption = null;
+    if (pos && ffOptional) {
+      // Obchodník ho přidá tlačítkem u upozornění; po přidání se už jako „ke zvážení“ neoznačuje.
+      ffOption = { reason: ffOptional, positions: pos, boxes: pos * FF.boxesPerPosition[env], model: FF.models[env][0], added: !!ev.addOptionalFF };
+      if (!ev.addOptionalFF) pos = 0;
+    }
+    if (pos) { takeFirst(FF.models[env], pos * FF.boxesPerPosition[env], 'fill', 1, 'Front-fill'); out[out.length - 1].note = `${ffNote} · ${FF.boxesPerPosition[env]} ${pl(FF.boxesPerPosition[env], "reprobox", "reproboxy", "reproboxů")} na pozici`; ffPos = pos; }
+    const OF = F.outFill, ratio = W / SW; let needsOutFill = false;
+    if (ratio > OF.ratioThreshold && (!OF.onlyOutdoorBand || (ev.outdoor && prog === 'band'))) {
+      takeFirst(OF.models[env], 2, 'fill', 2, 'Out-fill'); out[out.length - 1].note = `poměr šířky plochy a pódia ${ratio.toFixed(1).replace(".", ",")}: 1 pozice na stranu`;
+    } else if (!covers()) {
+      // Main PA nepokryje šířku plochy (vpředu nebo vzadu) → out-fill 1 pozice na stranu (model podle main PA: OF.modelsByMain).
+      const mm = (out.find(o => o.why === 'Main') || {}).m, ofm = takeFirst((OF.modelsByMain || {})[mm] || OF.models[env], 2, 'fill', 2, 'Out-fill');
+      out[out.length - 1].note = `main PA nepokryje šířku: na stranu potřeba vpředu ${Math.round(needNear())}° (vyzařuje ${mainHDispNear()}°), vzadu ${Math.round(needFar())}° (vyzařuje ${mainHDisp()}°) → 1 pozice na stranu` + psNote(ofm);
+      markPS(out[out.length - 1], ofm);
+      needsOutFill = true;
+    }
+    const ID = F.intelligibilityDelay;
+    if (ev.difficultAcoustics && D >= ID.minDepthM && !(maxThrow && D > maxThrow)) {
+      const m = takeFirst(ID.models[prog], ceil(W / ID.spacingM), 'fill', 1, 'Delay');
+      out[out.length - 1].note = 'kvůli srozumitelnosti (náročná akustika)' + psNote(m); markPS(out[out.length - 1], m);
+    }
+    if (maxThrow && D > maxThrow) {
+      // Linie delay každých lineSpacingM m za dosahem main PA; v každé linii 1 pozice na spacingM m šířky.
+      const lines = F.delay.lineSpacingM ? Math.max(1, ceil((D - maxThrow) / F.delay.lineSpacingM)) : 1, perLine = F.delay.boxesPerLine || ceil(W / F.delay.spacingM); // linie = 2 reproboxy (L a P), jinak podle šířky
+      const m = takeFirst(F.delay.models[prog], lines * perLine, 'fill', 1, 'Delay');
+      const bpp = R.channelGrouping.delayBoxesPerPosition || 1;
+      const where = F.delay.boxesPerLine === 2 ? '2 reproboxy v linii (vlevo a vpravo)' : `${perLine} ${pl(perLine, 'pozice', 'pozice', 'pozic')} v linii (1 na ${dec(F.delay.spacingM)} m šířky), ${bpp} reprobox na pozici`;
+      out[out.length - 1].lines = lines; out[out.length - 1].perLine = perLine;
+      out[out.length - 1].note = `main PA dosáhne do ${dec(Math.round(maxThrow))} m, plocha je dlouhá ${dec(D)} m: ${lines} ${pl(lines, 'linie', 'linie', 'linií')} delay (od ${dec(Math.round(maxThrow))} m každých ${dec(F.delay.lineSpacingM || 0)} m) × ${where}` + psNote(m); markPS(out[out.length - 1], m);
+    }
+    // Rigging pro delay T10 PS (lyra PS + stativ) – až po popisech delay.
+    for (const o of out.filter(o => (o.why === 'Delay' || o.why === 'Out-fill') && o.ps)) addPsRig(o.m, o.n);
+    for (const z of ev.zones || []) {
+      const Z = R.zones.types[z.type]; const nb = Math.max(Z.minBoxes, ceil(z.width * z.depth / Z.areaPerBoxM2));
+      takeFirst(Z.models[prog], nb, 'fill', 1, 'Zóna: ' + (z.name || Z.label)); out[out.length - 1].note = `${z.width}×${z.depth} m, 1 reprobox na ${Z.areaPerBoxM2} m²`;
+    }
+    // --- odposlechy ---
+    const mixes = ev.mixList || [];
+    const monDemand = [];
+    const models = R.monitors[prog];
+    mixes.forEach((mx, i) => {
+      if (!mx.boxes) return;
+      if (mx.type === 'stereo' && mx.boxes !== 2) mx = { ...mx, type: 'mono' }; // stereo jen pro 2 bedny
+      const m = mx.model && mx.model !== 'auto' ? mx.model : models[0];
+      take(m, mx.boxes, 'monitor', 'mon', 'Odposlechy'); out[out.length - 1].note = `odposlech ${i + 1} (${mx.type})`;
+      // mono: bedny sdílí kanál (max 2 na kanál), stereo: každá bedna vlastní kanál
+      const labels = mx.type === 'stereo'
+        ? Array.from({ length: mx.boxes }, (_, b) => `Odposlech ${i + 1}${mx.boxes === 2 ? ' ' + SIDES[b] : ' ' + (b + 1)}: 1× ${m}`)
+        : split(mx.boxes, ceil(mx.boxes / 2)).map((b, c, a) => `Odposlech ${i + 1}${a.length > 1 ? '.' + (c + 1) : ''}: ${b}× ${m}`);
+      monDemand.push([m, labels]);
+    });
+    const dfDemand = []; const df = ev.drumfill || 'none';
+    if (prog === 'band' && df !== 'none') {
+      const DF = R.drumfill;
+      take(DF.sub, DF.subCount, 'sub', 1, 'Drumfill'); out[out.length - 1].note = 'sub pro bubeníka (drumfill)'; dfDemand.push([DF.sub, [`Drumfill sub: ${DF.subCount}× ${DF.sub}`]]);
+      if (df.includes('+')) { const top = df.split('+')[1]; take(top, DF.topCount, 'monitor', 'mon', 'Drumfill'); out[out.length - 1].note = 'top pro bubeníka (drumfill)'; monDemand.push([top, [`Drumfill top: ${DF.topCount}× ${top}`]]); }
+    }
+    // --- kanály ---
+    // Každý kanál má popisek (co na něm hraje); zesilovače se plní kanál po kanálu (A, B, C, D).
+    const GR = R.channelGrouping, AL = R.ampAllocation, AP_ = R.ampPreference;
+    const sideOf = (groups, g) => groups === 2 ? ' ' + SIDES[g] : '';
+    const main = {}, subs = {}, fills = [];
+    // Malý systém (hlavní systém nejvýš smallSystem.maxBoxes reproboxů, bez subů): vše na jeden typ zesilovače (D40),
+    // pokud ho katalog u všech těchto reproboxů uvádí – vršky i spodky pak sdílí jeden zesilovač.
+    const SS = AL.smallSystem, sysItems = out.filter(o => (o.catg === 'main_la' || o.catg === 'main_point' || (o.catg === 'sub' && o.why.startsWith('Suby'))));
+    const smallAmp = SS && sysItems.filter(o => o.catg !== 'sub').reduce((s, o) => s + o.n, 0) <= SS.maxBoxes && sysItems.every(o => SS.amp in LS[o.m].amps) ? SS.amp : null;
+    for (const o of out) {
+      if (o.groups === 'mon' || o.why === 'Drumfill' || o.catg === 'rig') continue;
+      const l = LS[o.m];
+      if (o.catg === 'fill') {
+        const labels = [];
+        if (o.why === 'Front-fill') split(o.n, ffPos).forEach((b, i) => labels.push(`Front-fill ${i + 1}: ${b}× ${o.m}`));
+        else if (o.why.startsWith('Zóna')) for (let i = 0; i < o.n; i++) labels.push(`${o.why} ${i + 1}: 1× ${o.m}`);
+        else {
+          const bpp = GR[o.why === 'Out-fill' ? 'outFillBoxesPerPosition' : 'delayBoxesPerPosition'];
+          const posN = ceil(o.n / bpp);
+          if (o.why === 'Delay' && o.perLine === 2) for (let l = 1; l <= o.lines; l++) for (const sd of SIDES) labels.push(`Delay linie ${l} ${sd}: 1× ${o.m}${o.ps ? ' PS' : ''}`);
+          else split(o.n, posN).forEach((b, i) => labels.push(o.why === 'Out-fill' && posN === 2 ? `Out-fill ${SIDES[i]}: ${b}× ${o.m}` : `${o.why} ${i + 1}: ${b}× ${o.m}${o.ps ? ' PS' : ''}`));
+        }
+        fills.push([o.m, labels]);
+        continue;
+      }
+      const isSys = sysItems.includes(o);
+      const pref = AP_.byModel[o.m] || AP_[o.catg]; const a = (isSys && smallAmp) || pref.find(x => x in l.amps);
+      if (!a) { warn.push(`${o.m}: chybí v katalogu kompatibilní zesilovač`); continue; }
+      const spec = l.amps[a];
+      const per = ceil(o.n / o.groups);
+      const pc = (ap && o.catg === 'main_la') ? AP.perChannel : spec.perChannel;
+      const labels = [];
+      if (o.catg === 'sub' && o.m === 'V-GSUB' && o.why === 'Suby' && subPos) {
+        // Každá pozice subů má vlastní kanál.
+        split(o.n, subPos).forEach((b, i) => labels.push(subPos === 2 && cfgSub !== 'subArray' ? `V-GSUB ${SIDES[i]}: ${b}×` : `V-GSUB pozice ${i + 1}: ${b}×`));
+      } else {
+        for (let g = 0; g < o.groups; g++) {
+          if (spec.channelsPerCabinet) {
+            for (let b = 0; b < per; b++) for (let c = 0; c < spec.channelsPerCabinet; c++) labels.push(`${o.m}${sideOf(o.groups, g)} reprobox ${b + 1} (kanál ${c + 1}/${spec.channelsPerCabinet})`);
+          } else {
+            const parts = split(per, ceil(per / pc));
+            parts.forEach((b, i) => labels.push(`${o.m}${sideOf(o.groups, g)}${parts.length > 1 ? ' ' + (i + 1) : ''}: ${b}×`));
+          }
+        }
+      }
+      const d = o.catg === 'sub' ? subs : main; (d[a] = d[a] || []).push(...labels);
+    }
+    const CH = Object.fromEntries(AMP_IDS.map(k => [k, AMPS[k].channels]));
+    const amps = []; const log = [];
+    const addAmp = k => { const a = { k, no: amps.filter(x => x.k === k).length + 1, ch: Array(CH[k]).fill(null) }; amps.push(a); return a; };
+    const freeOf = k => amps.filter(a => a.k === k).reduce((s, a) => s + a.ch.filter(c => c == null).length, 0);
+    // Na volné kanály existujících zesilovačů typu k.
+    const fillSpare = (k, labels) => {
+      for (const a of amps) { if (a.k !== k) continue; for (let i = 0; i < a.ch.length && labels.length; i++) if (a.ch[i] == null) a.ch[i] = labels.shift(); }
+      return labels;
+    };
+    // Na nové zesilovače typu k (plní se postupně, zbytek kanálů zůstane volný).
+    const fillNew = (k, labels) => { let a = null; while (labels.length) { if (!a || !a.ch.includes(null)) a = addAmp(k); a.ch[a.ch.indexOf(null)] = labels.shift(); } };
+    const useSpare = (model, labels, only) => {
+      for (const k of (only || AL.spareChannelAmps)) if (k in LS[model].amps && labels.length) {
+        const before = labels.length; labels = fillSpare(k, labels);
+        if (labels.length < before) log.push(`${model}: ${before - labels.length} kan. na volných kanálech ${k}`);
+      }
+      return labels;
+    };
+    const useNew = (model, labels, order) => {
+      if (!labels.length) return labels;
+      const k = order.find(x => x in LS[model].amps);
+      if (!k) { warn.push(`${model}: chybí v katalogu kompatibilní zesilovač (${order.join(' / ')})`); return labels; }
+      log.push(`${model}: ${labels.length} kan. na nových ${k}`); fillNew(k, labels); return [];
+    };
+    for (const [k, labels] of Object.entries(main)) { log.push(`hlavní systém: ${labels.length} kan. ${k}`); fillNew(k, [...labels]); }
+    // Suby nejdřív na volné kanály zesilovačů stejného typu (např. D40 hlavního systému), teprve pak nový zesilovač.
+    for (const [k, labels] of Object.entries(subs)) { log.push(`suby: ${labels.length} kan. ${k}`); const left = fillSpare(k, [...labels]); if (left.length) fillNew(k, left); }
+    for (const [m, labels] of dfDemand) { const left = fillSpare('D80', [...labels]); useNew(m, left, ['D80']); }
+    const order = AP_.monitor[prog];
+    for (const [m, labels0] of monDemand) {
+      let left = useSpare(m, [...labels0], [order[0]]);
+      left = useNew(m, left, [order[0]].filter(k => k in LS[m].amps));
+      left = useSpare(m, left); useNew(m, left, order.slice(1));
+    }
+    // Filly: nejdřív volné kanály, pak typ zesilovače, kterého je potřeba nejméně kusů (při shodě pořadí z ampPreference.fill).
+    for (const [m, labels0] of fills) {
+      const left = useSpare(m, [...labels0]);
+      const order = [...AP_.fill[prog]].filter(k => k in LS[m].amps).sort((a, b) => ceil(left.length / CH[a]) - ceil(left.length / CH[b]) || AP_.fill[prog].indexOf(a) - AP_.fill[prog].indexOf(b));
+      useNew(m, left, order.length ? order : AP_.fill[prog]);
+    }
+    const used = Object.fromEntries(AMP_IDS.map(k => [k, amps.filter(a => a.k === k).length]));
+    const spare = Object.fromEntries(AMP_IDS.map(k => [k, freeOf(k)]));
+    const rk = cat.racks[0], RR = AL.racks;
+    const racks = (ap || !RR.onlyWithAP) ? Math.min(rk.count, Math.floor(used.D40 / rk.contents.D40), Math.floor(used.D80 / rk.contents.D80)) : 0;
+    const rackRest = AMP_IDS.map(k => [k, used[k] - (rk.contents[k] || 0) * racks]).filter(x => x[1] > 0);
+    info.push(R.consultNote);
+    const mainCh = Object.values(main).reduce((s, l) => s + l.length, 0);
+    // Horizontální pokrytí (všechny varianty): potřebný úhel jedné strany proti vyzařování hlavního systému
+    // (u arraye a stacku reprobox, který hraje do dálky – nejužší). Out-fill šířku doplní.
+    const hNeed = needHDeg(), hDisp = mainHDisp(), hasOutFill = out.some(o => o.why === 'Out-fill');
+    const coverageOk = covers() || hasOutFill;
+    const mo = out.find(o => o.why === 'Main');
+    if (mo && hDisp && typ === 'column' && ev.ground !== 'pole') {
+      const nearM = out.filter(o => o.why === 'Main').reduce((b, o) => (LS[o.m].dispersionH || 0) > (LS[b.m].dispersionH || 0) ? o : b).m;
+      const txt = ` · horizontální pokrytí na stranu: vpředu ${Math.round(needNear())}° (${nearM} ${mainHDispNear()}°), vzadu ${Math.round(needFar())}° (${mo.m} ${hDisp}°)` + (!covers() ? (hasOutFill ? ' – šířku doplní out-fill' : ' – nestačí') : '');
+      out.filter(o => o.why === 'Main').forEach(o => { o.note += txt; });
+    }
+    // Přesah k boční stěně (jen uvnitř): vnější polovina vyzařování reproboxu, který hraje do dálky (u arraye nejužší, u samostatných
+    // reproboxů jeden box), proti úhlu ke stěně v přední zóně. Upozornění a pořadí řeší variants() relativně k ostatním variantám.
+    const OS = (R.coverage || {}).overspill || {}, dSp = mo && mo.catg === 'main_point' ? LS[mo.m].dispersionH : hDisp;
+    const Sw0 = Math.min(ev.stageWidth || R.fills.frontFill.defaultStageWidthM, ev.width), dZ = Math.max(ev.depth * (COV.nearDepthShare ?? 0.25), COV.nearMinM ?? 5);
+    const outerNeed = Math.atan(Math.max(0, ev.width / 2 - Sw0 / 2) / dZ) * 180 / Math.PI;
+    const spill = (mo && dSp && (!OS.indoorOnly || !ev.outdoor)) ? { deg: dSp / 2 - outerNeed, need: outerNeed, disp: dSp, m: (out.find(o => o.why === 'Main' && LS[o.m].dispersionH === dSp) || mo).m } : null;
+    return { out, warn, info, ffOption, hNeed, hDisp, coverageOk, needsOutFill, spill, T, TL, dB, headroom, used, spare, log, amps, mainCh, racks, rackRest, subAlts, setup, fam, ap };
+  }
+
+  // Úzký malý prostor uvnitř: samostatné reproboxy (V7P) s delay se nabídnou i tam, kde jde věšet.
+  function narrowSpace(ev) {
+    const N = R.pointSource.delayInNarrowSpace;
+    return !!(N && !ev.outdoor && (N.programs || []).includes(ev.program) && ev.width <= N.maxWidthM && ev.width * ev.depth <= N.maxAreaM2 && ev.depth <= (N.maxDepthM ?? Infinity));
+  }
+  function variants(ev) {
+    const res = []; const prog = ev.program; const typ = ev.type || 'auto';
+    const a = R.systemType.autoPointSourceWhen;
+    // Samostatné reproboxy: do maxDepthM, bez věšení i dál (zbytek kryje delay).
+    const nrw = narrowSpace(ev), bi = a.bandIndoor, bandPoint = bi && prog === 'band' && !ev.outdoor && (ev.depth <= bi.maxDepthM || nrw);
+    const pointOk = typ === 'point' || (typ === 'auto' && ((a.program.includes(prog) && (ev.depth <= a.maxDepthM || !ev.rig || nrw)) || bandPoint) && !ev.ap);
+    // Malá venkovní stage bez kapely: samostatné reproboxy věšené (např. V7P na VP Flying adapter), když lze věšet.
+    const PF = R.pointSource.flown;
+    if (PF && PF.programs.includes(prog) && (!PF.outdoorOnly || ev.outdoor) && ev.rig && !ev.ap) for (const m of PF.models) {
+      const r = design({ ...ev, type: 'point', pointFlown: true }, true, null, m);
+      if (r && r.headroom != null) res.push({ name: `${m} věšený`, mount: 'pointFlown', fam: m, r });
+    }
+    if (pointOk) for (const md of R.pointSource.models[prog]) {
+      const r = design({ ...ev, type: 'point' }, true, null, md.id);
+      // Kapela s delay, když jde věšet: V7P zůstává v nabídce, ale doporučí se věšený array (delayInNarrowSpace.bandBackWhenRig).
+      const N = R.pointSource.delayInNarrowSpace || {}, back = prog === 'band' && ev.rig && N.bandBackWhenRig && r && r.out.some(o => o.why === 'Delay');
+      if (r && r.headroom != null && (!bandPoint || !bi.models || bi.models.includes(md.id) || typ === 'point')) res.push({ name: md.id, mount: 'point', fam: md.id, r, back });
+    }
+    const V = R.variants, lim = V.recommendHeadroomDb[prog], step = V.recommendRoundingDb || 0;
+    // Rezerva pro štítek: zaokrouhlená podle rules.json (zobrazuje se přesně).
+    const rounded = h => step ? Math.round(h / step) * step : h;
+    const enough = r => rounded(r.headroom) >= lim;
+    const notes = [];
+    const LA = R.lineArray;
+    if (typ === 'auto' || typ === 'column') for (const fk of LA.familyOrder) {
+      const label = { T: 'T10', CCL: 'CCL', V: 'V-Series' }[fk];
+      const fam = LA.families[fk];
+      // AP jen u věšeného arraye: s AP se nabízí jen věšené varianty (bez „Lze věšet“ označené „Nutné věšet“).
+      const apFly = ev.ap && !ev.rig;
+      const flown = (ev.rig || apFly) ? design({ ...ev, type: 'column', rig: true }, true, fk) : null;
+      const both = ev.rig && !ev.ap && LA.showGroundAndFlownWhenRigAllowed;
+      const onGround = (!ev.rig && !ev.ap) || both;
+      const ground = onGround ? design({ ...ev, type: 'column', rig: false, rigAllowed: !!ev.rig, ground: 'stack' }, true, fk) : null;
+      const pole = onGround && fam.pole ? design({ ...ev, type: 'column', rig: false, rigAllowed: !!ev.rig, ground: 'pole' }, true, fk) : null;
+      if (flown && flown.out.length) {
+        // Porovnání s AP / bez AP (jen rodiny, které AP podporují).
+        const apCapable = [fam.narrow, fam.wide].every(m => R.arrayProcessing.supportedModels.includes(m));
+        const alt = apCapable ? design({ ...ev, type: 'column', rig: true, ap: !flown.ap }, false, fk) : null;
+        res.push({ name: `${label} array (věšený)`, mount: 'array', fam: fk, r: flown, apAlt: alt && alt.ap !== flown.ap ? alt : null, mustFly: apFly });
+      }
+      const groundVariants = [];
+      // T10 na tyči jen tam, kde dostačuje (rezerva pro „doporučeno“ a v dosahu bez delay).
+      if (pole && pole.out.length && enough(pole) && ev.depth <= fam.pole.maxThrowM) groundVariants.push({ name: `${label} na distanční tyči (arc)`, mount: 'pole', fam: fk, r: pole });
+      if (ground && ground.out.length) groundVariants.push({ name: `${label} stack`, mount: 'stack', fam: fk, r: ground });
+      if (!ev.rig && !ev.ap) {
+        // Bez věšení: když stack nemá rezervu a věšený array by byl hlasitější, je nutné věšet.
+        const alt = design({ ...ev, type: 'column', rig: true, ap: false }, true, fk);
+        const f1 = h => h.toFixed(1).replace('.', ',');
+        const altTxt = alt ? ` ${label} array (věšený) by měl rezervu ${f1(alt.headroom)} dB.` : '';
+        for (const gv of groundVariants) if (!enough(gv.r) && alt && alt.headroom > gv.r.headroom) {
+          gv.r.warn.unshift(`Na zemi nemá dostatečnou rezervu (${f1(gv.r.headroom)} dB, potřeba ${lim} dB). Je nutné použít věšený systém.${altTxt}`);
+          gv.mustFly = true;
+        }
+      }
+      res.push(...groundVariants);
+    }
+    if (ev.ap && !ev.rig && (typ === 'auto' || typ === 'column')) notes.push('ArrayProcessing je jen u věšeného arraye: nabízí se jen věšené varianty. Pro akci je nutné věšet – zaškrtněte „Lze věšet“.');
+    // Zbytečně velké: v montážích z oversizedHiddenMounts je větší rodina jen ve „Zobrazit všechny“ (na konci),
+    // když stačí lehčí rodina se stejnou montáží.
+    const weight = v => v.r.out.filter(o => o.why === 'Main').reduce((s, o) => s + o.n * (LS[o.m].weightKg ?? 1000), 0);
+    for (const mount of V.oversizedHiddenMounts || []) {
+      const g = res.filter(v => v.mount === mount);
+      const ok = g.filter(v => enough(v.r));
+      if (!ok.length) continue;
+      const minW = Math.min(...ok.map(weight));
+      g.forEach(v => { if (weight(v) > minW) v.oversized = true; });
+    }
+    // Varianty bez rezervy (pod hideBelowHeadroomDb) se nenabízí.
+    if (V.hideBelowHeadroomDb != null) {
+      const hidden = res.filter(v => rounded(v.r.headroom) < V.hideBelowHeadroomDb);
+      if (hidden.length) {
+        notes.push(`Skryto pro nedostatečnou rezervu: ${hidden.map(v => `${v.name} (${v.r.headroom.toFixed(1).replace('.', ',')} dB)`).join(', ')}.`);
+        res.splice(0, res.length, ...res.filter(v => !hidden.includes(v)));
+      }
+    }
+    // Odsunuté varianty (Y10P, V-Series stack, zbytečně velké stacky): doporučí se jen, když nestačí nic jiného;
+    // v přehledu skryté, ve „Zobrazit všechny“ na konci. Výjimka: obchodník zvolil typ systému ručně.
+    const backMounts = typ === 'point' ? [] : (V.deprioritizedMounts || []);
+    const backVariants = typ === 'point' ? [] : (V.deprioritizedVariants || []);
+    const isBack = v => v.oversized || v.back || backMounts.includes(v.mount) || backVariants.some(b => b.mount === v.mount && b.family === v.fam);
+    // Doporučuje se jen varianta, která pokryje šířku plochy (vyzařování); ostatní až když nic jiného nestačí.
+    // Přesah do stěn (uvnitř): varianta, která svítí ven o víc než maxExcessDeg a zároveň o víc než relativeDeg víc než nejužší
+    // vyhovující varianta, dostane upozornění s odkazem na užší variantu a doporučí se až po variantách bez přesahu.
+    const OS = (R.coverage || {}).overspill || {};
+    const fine = res.filter(v => enough(v.r) && v.r.coverageOk !== false && !v.r.needsOutFill && v.r.spill);
+    if (fine.length && OS.maxExcessDeg != null) {
+      const best = fine.reduce((b, v) => v.r.spill.deg < b.r.spill.deg || (v.r.spill.deg === b.r.spill.deg && weight(v) < weight(b)) ? v : b);
+      const f0 = x => Math.round(x);
+      for (const v of res) {
+        const sp = v.r.spill; if (!sp) continue;
+        if (sp.deg > OS.maxExcessDeg && sp.deg - best.r.spill.deg > (OS.relativeDeg ?? 0)) {
+          v.r.overspill = true;
+          v.r.warn.push(`Široké vyzařování: k boční stěně je vpředu potřeba ${f0(sp.need)}°, ${sp.m} vyzařuje ven ${String(sp.disp / 2).replace('.', ',')}° (polovina z ${sp.disp}°). Zvuk bude svítit do bočních stěn (odrazy). Užší vyzařování má varianta ${best.name} (${best.r.spill.disp}°).`);
+        }
+      }
+    }
+    const okCov = res.map((v, i) => enough(v.r) && v.r.coverageOk !== false && !v.r.needsOutFill ? i : -1).filter(i => i >= 0);
+    const okAll = okCov.length ? okCov : res.map((v, i) => enough(v.r) ? i : -1).filter(i => i >= 0);
+    // Doporučení: nejmenší systém, který stačí (nejnižší hmotnost hlavního systému podle katalogu);
+    // při shodě jednodušší montáž (bez rigování), pak pořadí variant.
+    const SIMPLE = { pole: 0, stack: 1, array: 2, point: 3, pointFlown: 4 };
+    const bySize = idx => [...idx].sort((a, b) => weight(res[a]) - weight(res[b]) || (SIMPLE[res[a].mount] ?? 9) - (SIMPLE[res[b].mount] ?? 9) || a - b);
+    // Preferovaná rodina (rules.variants.preferFamily): když ji podmínky splňují a stačí, doporučí se před lehčí rodinou.
+    const pref = (V.preferFamily || []).find(p => p.program === prog && (p.outdoor == null || p.outdoor === !!ev.outdoor)
+      && ev.depth >= (p.minDepthM || 0) && ev.depth <= (p.maxDepthM ?? Infinity) && (ev.stageWidth || 8) <= (p.maxStageM ?? Infinity));
+    const isPref = v => pref && v.fam === pref.family && (pref.mount ? v.mount === pref.mount : v.mount !== 'stack');
+    // Preferovaná varianta stačí i s nižší rezervou, když to pravidlo dovoluje (minHeadroomDb).
+    const prefOk = res.map((v, i) => isPref(v) && !v.r.needsOutFill && rounded(v.r.headroom) >= (pref.minHeadroomDb ?? lim) ? i : -1).filter(i => i >= 0);
+    // Uvnitř mají přednost varianty bez přesahu do stěn (rules.coverage.overspill); ostatní zůstávají v nabídce.
+    const rest = okAll.filter(i => !prefOk.includes(i));
+    const front = rest.filter(i => !isBack(res[i])), back = rest.filter(i => isBack(res[i]));
+    const noSpill = idx => idx.filter(i => !res[i].r.overspill), spill = idx => idx.filter(i => res[i].r.overspill);
+    const ok = [...bySize(noSpill(prefOk)), ...bySize(noSpill(front)), ...bySize(spill(prefOk)), ...bySize(spill(front)), ...bySize(noSpill(back)), ...bySize(spill(back))];
+    // Když nestačí nic a nejlepší varianta je „nutné věšet“, nedoporučovat nic.
+    let rec = ok.length ? ok[0] : res.reduce((b, v, i) => v.r.headroom > res[b].r.headroom ? i : b, 0);
+    if (!ok.length && res[rec] && res[rec].mustFly) {
+      rec = -1; notes.push(`Žádná varianta na zemi nemá dostatečnou rezervu (${lim} dB). Je nutné použít věšený systém – zaškrtněte „Lze věšet“.`);
+    }
+    res.forEach((v, i) => { v.tag = i === rec ? 'rec' : (enough(v.r) ? '' : 'edge'); });
+    // Doporučená preferovaná varianta s nižší rezervou: vysvětlit proč.
+    if (rec >= 0 && isPref(res[rec]) && !enough(res[rec].r))
+      res[rec].r.warn.unshift(`Rezerva ${res[rec].r.headroom.toFixed(1).replace('.', ',')} dB je pod běžným limitem ${lim} dB, ale ${res[rec].name} je tu vhodný: ${pref.note || 'preferovaná varianta'}`);
+    // Přehled: z každého typu montáže jen nejmenší varianta, která stačí (když nestačí žádná, ta s největší rezervou).
+    let shown = res;
+    if (V.compactPerMount && !ev.showAll) {
+      const keep = new Set();
+      for (const mount of [...new Set(res.map(v => v.mount))]) {
+        const g = res.filter(v => v.mount === mount && !isBack(v));
+        if (!g.length) continue;
+        // V rámci montáže mají přednost varianty bez přesahu do stěn (např. CCL array místo T10 arraye v úzkém sále).
+        const okAllG = g.filter(v => enough(v.r)), okG = okAllG.some(v => !v.r.overspill) ? okAllG.filter(v => !v.r.overspill) : okAllG;
+        keep.add(okG.length ? okG.reduce((b, v) => weight(v) < weight(b) ? v : b) : g.reduce((b, v) => v.r.headroom > b.r.headroom ? v : b));
+      }
+      res.forEach(v => { if (v.tag === 'rec') keep.add(v); });
+      shown = res.filter(v => keep.has(v));
+    }
+    // Pořadí: doporučená první, pak podle hlasitosti (rezervy) od nejvyšší, varianty s přesahem do stěn za nimi, odsunuté na konci.
+    const rank = v => v.tag === 'rec' ? 0 : isBack(v) ? 3 : v.r.overspill ? 2 : 1;
+    shown = [...shown].sort((a, b) => rank(a) - rank(b) || b.r.headroom - a.r.headroom);
+    shown.notes = notes;
+    shown.hiddenCount = res.length - shown.length;
+    return shown;
+  }
+  return { design, variants, LS, AMPS };
+}
+if (typeof module !== 'undefined') module.exports = { makeEngine };
+
+const E = makeEngine(CATALOG, RULES);
+const $ = id => document.getElementById(id);
+let mixes = [];
+let addFF = false; // front-fill ke zvážení přidaný obchodníkem
+const defaultMonModel = () => RULES.monitors[document.querySelector('input[name=prog]:checked').value][0];
+let zones = [];
+let selected = null;
+
+function renderMixes(){
+  $('mixes').innerHTML = mixes.map((m,i)=>`<div class="li">
+    <input id="mb${i}" type="number" min="1" value="${m.boxes}" aria-label="Počet reproboxů odposlechu ${i+1}">
+    <select id="mt${i}" aria-label="Typ odposlechu ${i+1}"><option value="mono"${m.type==='mono'?' selected':''}>mono</option><option value="stereo"${m.type==='stereo'&&m.boxes===2?' selected':''}${m.boxes===2?'':' disabled'}>stereo</option></select>
+    <select id="mm${i}" aria-label="Model odposlechu ${i+1}"><option${m.model==='MAX2'?' selected':''}>MAX2</option><option${m.model==='M4'?' selected':''}>M4</option></select>
+    <button type="button" class="x" data-rm-mix="${i}" aria-label="Odebrat odposlech ${i+1}">✕</button></div>`).join('') || '<p class="hint">Bez odposlechů.</p>';
+}
+function renderZones(){
+  $('zones').innerHTML = zones.map((z,i)=>`<div class="li z">
+    <input id="zn${i}" value="${z.name}" aria-label="Název prostoru ${i+1}">
+    <select id="zt${i}" aria-label="Typ prostoru ${i+1}"><option value="foyer"${z.type==='foyer'?' selected':''}>foyer</option><option value="outfill"${z.type==='outfill'?' selected':''}>vedlejší prostor</option></select>
+    <input id="zw${i}" type="number" min="1" value="${z.width}" aria-label="Šířka prostoru ${i+1} v metrech">
+    <input id="zd${i}" type="number" min="1" value="${z.depth}" aria-label="Délka prostoru ${i+1} v metrech">
+    <button type="button" class="x" data-rm-zone="${i}" aria-label="Odebrat prostor ${i+1}">✕</button></div>`).join('') || '<p class="hint">Žádné. Např. foyer nebo vedlejší sál.</p>';
+}
+function readForm(){
+  mixes = mixes.map((m,i)=>{
+    const boxes=+$('mb'+i).value||0, sel=$('mt'+i);
+    // Stereo jen pro odposlech se 2 bednami.
+    const st=sel.querySelector('option[value=stereo]'); st.disabled = boxes!==2; if(boxes!==2) sel.value='mono';
+    return {boxes,type:sel.value,model:$('mm'+i).value};});
+  zones = zones.map((z,i)=>({name:$('zn'+i).value,type:$('zt'+i).value,width:+$('zw'+i).value||1,depth:+$('zd'+i).value||1}));
+  return {
+    people:Math.round((+$('width').value||1)*(+$('depth').value||1)*RULES.audienceDensityPerM2),
+    outdoor:document.querySelector('input[name=env]:checked').value==='out',
+    program:document.querySelector('input[name=prog]:checked').value,
+    width:+$('width').value||1, depth:+$('depth').value||1, stageWidth:+$('stage').value||8,
+    type:'auto', rig:$('rig').checked, rigHeight:+$('rigH').value||RULES.lineArray.flownHeight.standardRigHeightM, ap:$('ap').checked,
+    difficultAcoustics:$('acoustic').checked,
+    mixList:mixes, drumfill:$('drumfill').value, zones, showAll:$('showAll').checked, addOptionalFF:addFF
+  };
+}
+// Skupiny ve výpisu: k čemu bedny jsou.
+const GROUPS = [
+  ['Hlavní systém','Hlavní systém (L/P)'], ['Suby','Suby'], ['Front-fill','Front-fill (hrana pódia, první řady)'],
+  ['Out-fill','Out-fill (boky plochy)'], ['Delay','Delay (zpožďovací linie)'], ['Prostory','Přilehlé prostory'],
+  ['Odposlechy','Odposlechy (pódium)'], ['Drumfill','Drumfill'], ['Rigging','Rigging a příslušenství']];
+const GROUP = o => o.why==='Rigging'?'Rigging':o.why==='Main'?'Hlavní systém':o.why.startsWith('Suby')?'Suby':o.why==='Odposlechy'?'Odposlechy':o.why==='Drumfill'?'Drumfill'
+  :o.why==='Front-fill'?'Front-fill':o.why==='Out-fill'?'Out-fill':o.why==='Delay'?'Delay':'Prostory';
+function summary(r){
+  const agg = {};
+  r.out.forEach(o=>{const g=GROUP(o), m=o.m+(o.ps?' PS':''); (agg[g]=agg[g]||{}); agg[g][m]=(agg[g][m]||0)+o.n;});
+  const fmt = g => agg[g] ? Object.entries(agg[g]).map(([m,n])=>`${n}× ${m}`).join(', ') : '–';
+  return {agg, fmt};
+}
+// Hlavní systém: celkový počet reproboxů a za ním počet na stranu (L/P).
+const mainTxt = r => { const s = summary(r), ps = r.out.filter(o => o.why === 'Main').reduce((a, o) => a + o.n, 0) / 2;
+  return `${s.fmt('Hlavní systém')} (${String(ps).replace('.', ',')} na stranu)`; };
+// Filly a delay na kartě varianty (jen když jsou v návrhu); delay i s počtem linií.
+const fillLines = r => { const s = summary(r), L = [];
+  const lines = r.out.filter(o => o.why === 'Delay').reduce((a, o) => a + (o.lines || 0), 0);
+  if (s.agg['Delay']) L.push(`Delay: ${lines ? `${lines} ${lines===1?'linie':lines<5?'linie':'linií'}, ` : ''}${s.fmt('Delay')}`);
+  if (s.agg['Out-fill']) L.push(`Out-fill: ${s.fmt('Out-fill')}`);
+  if (s.agg['Front-fill']) L.push(`Front-fill: ${s.fmt('Front-fill')}`);
+  return L.map(x => x + '<br>').join(''); };
+const ampLine = r => Object.entries(r.used).filter(x=>x[1]).map(([k,n])=>`${n}× ${k}`).join(', ');
+const tagPill = t => t==='rec'?'<span class="pill rec">Doporučeno</span>':t==='edge'?'<span class="pill edge">Na hraně</span>':'<span class="pill ok">Varianta</span>';
+const dbTxt = h => `${h>=0?'+':'−'}${Math.abs(h).toFixed(1).replace('.',',')} dB`;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(){
+  const ev = readForm();
+  const vs = E.variants(ev);
+  drawPlan(ev);
+  $('rigH').disabled = !ev.rig;
+  if (selected==null || !vs.find(v=>v.name===selected)) selected = (vs.find(v=>v.tag==='rec')||vs[0]||{}).name;
+  $('cards').innerHTML = vs.length ? vs.map(v=>{const s=summary(v.r);return `<button type="button" class="card ${v.tag}" aria-pressed="${v.name===selected}" data-v="${esc(v.name)}">
+    <span class="nm">${v.name}</span>${tagPill(v.tag)}
+    <span class="hr">Rezerva ${dbTxt(v.r.headroom)}${v.r.setup?' · '+v.r.setup:''}</span>${v.mustFly?'<span class="hr must">Nutné věšet</span>':''}${v.r.coverageOk===false?'<span class="hr must">Nepokryje šířku plochy</span>':v.r.needsOutFill?'<span class="hr must">Šířka: potřebuje out-fill</span>':''}${v.r.overspill?'<span class="hr must">Široké vyzařování (stěny)</span>':''}
+    <span class="sum"><b>${mainTxt(v.r)}</b><br>Suby: ${s.fmt('Suby')}<br>${fillLines(v.r)}Zesilovače: ${ampLine(v.r)}</span></button>`}).join('')
+    : '<p class="empty">Pro zadané parametry nevychází žádná varianta. Zkuste povolit věšení (Lze věšet) nebo jiný typ systému.</p>';
+  $('hiddenCnt').textContent = vs.hiddenCount ? `(${vs.hiddenCount} skryto)` : '';
+  $('notes').innerHTML = (vs.notes||[]).length ? `<div class="box warn">${vs.notes.map(esc).join('<br>')}</div>` : '';
+  const v = vs.find(x=>x.name===selected);
+  $('detail').innerHTML = v ? detail(ev,v) : '';
+  if (LEARN) learnUpdate(ev, vs, v);
+}
+// Náčrt plochy shora: poměr stran šířka × délka a pódium (rozměry v měřítku).
+function drawPlan(ev){
+  const W=Math.max(1,ev.width), L=Math.max(1,ev.depth), S=Math.min(Math.max(1,ev.stageWidth),W*1.5), SD=Math.min(6,Math.max(3,S/3));
+  const VW=320, pad=22, maxH=200;
+  const sc=Math.min((VW-2*pad)/Math.max(W,S), (maxH-pad-SD)/(L));
+  const aw=W*sc, al=L*sc, sw=S*sc, sd=SD*sc, x0=(VW-aw)/2, y0=18+sd, H=y0+al+pad; // nahoře místo pro popisek pódia
+  const f=v=>String(+v.toFixed(1)).replace('.',',');
+  // Popisek pódia uvnitř jen když se vejde (odhad šířky textu ~7,5 px na znak), jinak nad pódiem.
+  const stTxt=`pódium ${f(S)} m`, inside=sw>=stTxt.length*7.5+10;
+  $('plan').setAttribute('viewBox',`0 0 ${VW} ${H}`);
+  $('plan').innerHTML=`<rect class="stage" x="${(VW-sw)/2}" y="${y0-sd}" width="${sw}" height="${sd}" rx="2"/>
+    ${inside?`<text class="lbl" x="${VW/2}" y="${y0-sd/2+4}" text-anchor="middle">${stTxt}</text>`:''}
+    <rect class="area" x="${x0}" y="${y0}" width="${aw}" height="${al}" rx="3"/>
+    <text class="dim" x="${VW/2}" y="${y0+al+15}" text-anchor="middle">šířka ${f(W)} m</text>
+    <text class="dim" x="${x0+aw+4}" y="${y0+al/2}" transform="rotate(90 ${x0+aw+4} ${y0+al/2})" text-anchor="middle">délka ${f(L)} m</text>
+    ${inside?'':`<text class="dim" x="${VW/2}" y="${y0-sd-4}" text-anchor="middle">${stTxt}</text>`}`;
+}
+function detail(ev,v){
+  const r=v.r;
+  const rows = GROUPS.map(([g,label])=>{const items=r.out.filter(o=>GROUP(o)===g); if(!items.length) return '';
+    return items.map((o,i)=>`<tr><td class="g">${i?'':label}</td><td class="n">${o.n}×</td><td><b>${o.m}${o.ps?' PS':''}</b></td><td>${esc(o.note||o.why)}</td></tr>`).join('');}).join('');
+  const amps = Object.entries(r.used).filter(x=>x[1]).map(([k,n])=>`<div class="amp"><b>${n}×</b>${k}<br><span>${n*E.AMPS[k].channels} kan., volných ${r.spare[k]}</span></div>`).join('');
+  const chMap = r.amps.map(a=>`<div class="champ"><b>${a.k} #${a.no}</b><ol>${a.ch.map((c,i)=>`<li${c?'':' class="free"'}><span class="cl">${'ABCD'[i]}</span>${c?esc(c):'volný'}</li>`).join('')}</ol></div>`).join('');
+  const rack = r.racks ? `<div class="box note"><b>Jako racky:</b> ${r.racks}× rack (2× D40 + 1× D80)${r.rackRest.length?' + '+r.rackRest.map(([k,n])=>`${n}× ${k}`).join(', '):''}. Máme 2 racky, hodí se u větších akcí s AP.</div>` : '';
+  const alts = r.subAlts.length ? `<div class="box note"><b>Záměna subů</b> (1× KSL-SUB místo 2× V-GSUB):${r.subAlts.map(a=>`<div>${a.text} <span class="sum">(${a.amps})</span></div>`).join('')}</div>` : '';
+  const apBox = v.apAlt ? apCompare(r, v.apAlt) : '';
+  const warns = r.warn.length ? `<div class="box warn">${r.warn.map(esc).join('<br>')}</div>` : '';
+  const fo = r.ffOption;
+  const ffBox = fo && !fo.added ? `<div class="box warn ffopt"><span>Front-fill ke zvážení (${esc(fo.reason)}): ${fo.positions} ${fo.positions===1?'pozice':fo.positions<5?'pozice':'pozic'}, ${fo.boxes}× ${esc(fo.model)}.</span><button type="button" class="primary" data-ff="add">Přidat front-fill</button></div>` : '';
+  const ffDel = fo && fo.added ? `<button type="button" class="linkbtn" data-ff="del">Odebrat front-fill</button>` : '';
+  const txt = copyText(ev,v);
+  return `<div class="dhead"><div><h2 style="margin:0">${v.name}</h2><span class="hr">Rezerva ${dbTxt(r.headroom)} nad cílem na poslední řadě${r.setup?' · '+r.setup:''}</span></div>
+    <div>${tagPill(v.tag)} <button type="button" class="primary" id="copy" data-txt="${esc(txt)}">Kopírovat souhrn</button></div></div>
+    ${warns}
+    ${ffBox}
+    <div class="tw"><table><thead><tr><th>Skupina</th><th class="n">Ks</th><th>Model</th><th>Proč</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${ffDel}
+    ${alts}
+    ${apBox}
+    <div><h3 style="margin-top:0">Zesilovače</h3><div class="amps">${amps}</div></div>
+    ${rack}
+    <div><h3 style="margin-top:0">Rozdělení kanálů</h3><div class="chmap">${chMap}</div></div>
+    <div class="box note">${esc(RULES.consultNote)}</div>`;
+}
+// Porovnání stejné věšené varianty s AP a bez AP.
+function apCompare(r, alt){
+  const withAP = r.ap ? r : alt, noAP = r.ap ? alt : r;
+  const mainOf = x => summary(x).fmt('Hlavní systém');
+  const perCh = x => { if (x.ap) return String(RULES.arrayProcessing.perChannel);
+    const m = (x.out.find(o=>o.why==='Main')||{}).m, a = m && Object.values(E.LS[m].amps)[0];
+    return a && a.perChannel ? `${a.perChannel} (katalog)` : 'chybí v katalogu'; };
+  const row = (label, f) => `<tr><td>${label}</td><td>${f(noAP)}</td><td>${f(withAP)}</td></tr>`;
+  const AP = RULES.arrayProcessing;
+  return `<div class="box note"><b>Rozdíl bez AP / s AP</b>
+    <div class="tw"><table><thead><tr><th></th><th>Bez AP</th><th>S AP</th></tr></thead><tbody>
+    ${row('Hlavní systém', mainOf)}
+    ${row('Reproboxů na jeden kanál zesilovače', perCh)}
+    ${row('Kanály hlavního systému', x=>String(x.mainCh))}
+    ${row('Suby', x=>summary(x).fmt('Suby'))}
+    ${row('Zesilovače celkem', ampLine)}
+    ${row('Racky', x=>x.racks?`${x.racks}× rack`:'–')}
+    ${row('Rezerva', x=>dbTxt(x.headroom))}
+    </tbody></table></div>
+    <span class="sum">AP (d&amp;b ArrayProcessing): jen věšený array, min. ${AP.minPerSide} reproboxů na stranu, každý reprobox na vlastním kanálu zesilovače, celý array na stejném typu zesilovače. Rezerva hlasitosti se v kalkulačce nemění, AP řeší rovnoměrnost pokrytí a tonální vyvážení podle vzdálenosti (výpočet v ArrayCalc).</span></div>`;
+}
+function copyText(ev,v){
+  const r=v.r, s=summary(r);
+  return [`${v.name}${r.setup?' ('+r.setup+')':''}`,
+    `${ev.outdoor?'venku':'uvnitř'}, ${ev.program==='band'?'kapela':'mluvené slovo'}, plocha ${ev.width}×${ev.depth} m, pódium ${ev.stageWidth} m`,
+    `Hlavní systém: ${mainTxt(r)}`, `Suby: ${s.fmt('Suby')}`, `Front-fill: ${s.fmt('Front-fill')}`, `Out-fill: ${s.fmt('Out-fill')}`, `Delay: ${s.fmt('Delay')}`, `Přilehlé prostory: ${s.fmt('Prostory')}`,
+    `Odposlechy: ${s.fmt('Odposlechy')}`, `Rigging: ${s.fmt('Rigging')}`, `Drumfill: ${s.fmt('Drumfill')}`, `Zesilovače: ${ampLine(r)}`,
+    RULES.consultNote].join('\n');
+}
+document.addEventListener('input', e=>{ if(e.target.closest('#f')) render(); });
+document.addEventListener('change', e=>{ if(e.target.closest('#f') || e.target.id==='showAll') render(); });
+document.addEventListener('click', e=>{
+  const ffb=e.target.closest('[data-ff]'); if(ffb){ addFF = ffb.dataset.ff==='add'; render(); return; }
+  const c=e.target.closest('.card'); if(c){ selected=c.dataset.v; render(); return; }
+  if(e.target.id==='addMix'){ readForm(); mixes.push({boxes:1,type:'mono',model:defaultMonModel()}); renderMixes(); render(); }
+  if(e.target.id==='addZone'){ readForm(); zones.push({name:'foyer',type:'foyer',width:15,depth:10}); renderZones(); render(); }
+  if(e.target.dataset.rmMix!=null){ readForm(); mixes.splice(+e.target.dataset.rmMix,1); renderMixes(); render(); }
+  if(e.target.dataset.rmZone!=null){ readForm(); zones.splice(+e.target.dataset.rmZone,1); renderZones(); render(); }
+  if(e.target.id==='copy'){ const b=e.target; navigator.clipboard.writeText(b.dataset.txt).then(()=>{b.textContent='Zkopírováno';setTimeout(()=>b.textContent='Kopírovat souhrn',1500)}).catch(()=>{b.textContent='Kopírování nejde';}); }
+});
+$('f').addEventListener('submit', e=>e.preventDefault());
+
+// ===== Režim učení (web/uceni.html) =====
+// Ke každé zadané akci si Filip zapíše, co by změnil. Záznam se ukládá automaticky (localStorage a volitelně do připojeného souboru)
+// pod klíčem podle zadání akce; při návratu ke stejnému zadání se jeho poznámky znovu načtou.
+const LKEY = 'db-uceni-v1';
+let lRecs = [], lCur = null, lSig = null, lEv = null, lVs = [], lFile = null, lFileOk = false;
+const lLoad = () => { try { lRecs = JSON.parse(localStorage.getItem(LKEY) || '[]'); } catch (e) { lRecs = []; } };
+const lStore = () => { try { localStorage.setItem(LKEY, JSON.stringify(lRecs)); } catch (e) {} };
+const lInput = ev => ({ program: ev.program, outdoor: ev.outdoor, width: ev.width, depth: ev.depth, stageWidth: ev.stageWidth, rig: ev.rig, rigHeight: ev.rigHeight, ap: ev.ap,
+  difficultAcoustics: ev.difficultAcoustics, mixList: ev.mixList, drumfill: ev.drumfill, zones: ev.zones });
+const lItems = r => r.out.map(o => ({ group: GROUP(o), n: o.n, model: o.m + (o.ps ? ' PS' : '') }));
+const lSnap = vs => vs.map(v => { const s = summary(v.r); return { name: v.name, tag: v.tag, headroomDb: +v.r.headroom.toFixed(1), main: mainTxt(v.r), subs: s.fmt('Suby'),
+  delay: s.fmt('Delay'), outFill: s.fmt('Out-fill'), frontFill: s.fmt('Front-fill'), amps: ampLine(v.r), flags: [v.mustFly && 'nutné věšet', v.r.needsOutFill && 'out-fill', v.r.overspill && 'přesah'].filter(Boolean), warnings: v.r.warn }; });
+const MODELS = CATALOG.loudspeakers.map(x => x.id).concat(['T10 PS']).concat(Object.keys(RULES.rigging || {}).length ? [] : []);
+const GROUPNAMES = GROUPS.map(g => g[0]);
+const lEsc = s => esc(s == null ? '' : s);
+const lPl = n => n >= 1 && n < 5 ? 'akce' : 'akcí';
+
+function learnUpdate(ev, vs, v){
+  // Snapshot návrhu aplikace bereme vždy z kompletní nabídky (i skryté varianty).
+  lEv = ev; lVs = E.variants({ ...ev, showAll: true });
+  const sig = JSON.stringify(lInput(ev));
+  if (sig !== lSig) {
+    lSig = sig;
+    const ex = lRecs.find(r => r.sig === sig);
+    lCur = ex ? JSON.parse(JSON.stringify(ex)) : { sig, input: lInput(ev), feedback: { verdict: '', shouldRecommend: '', base: '', items: null, note: '' } };
+    learnRender();
+  } else if (lCur && !lCur.feedback.items && v) { lCur.feedback.base = v.name; learnRenderEditor(); }
+}
+function learnSave(){
+  if (!lCur) return;
+  const f = lCur.feedback, touched = f.verdict || f.shouldRecommend || f.note.trim() || f.items;
+  const i = lRecs.findIndex(r => r.sig === lCur.sig);
+  if (!touched) { if (i >= 0) { lRecs.splice(i, 1); lStore(); lFileWrite(); learnRenderSaved(); } return; }
+  lCur.savedAt = new Date().toISOString();
+  lCur.app = { recommended: (lVs.find(x => x.tag === 'rec') || {}).name || null, variants: lSnap(lVs), engineRules: 'rules.json v aplikaci' };
+  if (f.items) { const b = lVs.find(x => x.name === f.base); lCur.feedback.baseItems = b ? lItems(b.r) : null; }
+  if (i >= 0) lRecs[i] = JSON.parse(JSON.stringify(lCur)); else lRecs.push(JSON.parse(JSON.stringify(lCur)));
+  lStore(); lFileWrite(); learnRenderSaved();
+  $('lstatus').textContent = 'Uloženo ' + new Date().toLocaleTimeString('cs-CZ') + (lFileOk ? ' · i do souboru' : '');
+}
+function learnRender(){
+  const el = $('learn'); el.hidden = false;
+  const f = lCur.feedback, opts = lVs.map(x => `<option${x.name === f.shouldRecommend ? ' selected' : ''}>${lEsc(x.name)}</option>`).join('');
+  const V = [['ok', 'Návrh sedí'], ['upravit', 'Upravil bych'], ['spatne', 'Úplně jinak']];
+  el.innerHTML = `<div class="lhead"><h2 style="margin:0">Učení <span class="learnflag">režim učení</span></h2><span class="status" id="lstatus">${lRecs.find(r => r.sig === lCur.sig) ? 'Tahle akce už je uložená, upravujete ji.' : 'Nová akce – ukládá se automaticky při změně.'}</span></div>
+    <div><label>Hodnocení návrhu</label><div class="verd">${V.map(([k, t]) => `<button type="button" data-lverd="${k}" aria-pressed="${f.verdict === k}">${t}</button>`).join('')}</div></div>
+    <label for="lrec">Doporučená varianta má být<select id="lrec"><option value="">(jak navrhla aplikace: ${lEsc((lVs.find(x => x.tag === 'rec') || {}).name || '–')})</option>${opts}<option value="jiná"${f.shouldRecommend === 'jiná' ? ' selected' : ''}>jiná – popíšu v poznámce</option></select></label>
+    <div><label>Moje sestava (upravte počty a modely, přidejte nebo smažte řádky)</label><div id="led"></div></div>
+    <label for="lnote">Co a proč bych změnil (pravidlo, pořadí variant, počty…)<textarea id="lnote" placeholder="Např. tady by měl vyhrát CCL array kvůli úhlům, T10 stack jen jako varianta…">${lEsc(f.note)}</textarea></label>
+    <div class="bar"><button type="button" class="primary" id="lnext">Uložit a nová akce</button><button type="button" id="lclear">Smazat poznámky k této akci</button></div>
+    <details id="lsaved"></details>`;
+  learnRenderEditor(); learnRenderSaved();
+}
+function learnRenderEditor(){
+  const f = lCur.feedback, base = lVs.find(x => x.name === f.base) || lVs.find(x => x.tag === 'rec') || lVs[0];
+  if (!f.base && base) f.base = base.name;
+  const orig = base ? lItems(base.r) : [], items = f.items || orig;
+  const same = (it, i) => !f.items || (orig[i] && orig[i].group === it.group && orig[i].n === it.n && orig[i].model === it.model);
+  $('led').innerHTML = `<p class="hint" style="margin-bottom:6px">Vychází z varianty <b>${lEsc(f.base || '–')}</b>${f.items ? ' · <button type="button" class="linkbtn" id="lreset">vrátit podle vybrané varianty</button>' : ' (vyberte jinou kartu nahoře, dokud nic neupravíte)'}.</p>
+    <div class="ed h"><span>Skupina</span><span>Ks</span><span>Model</span><span></span></div>
+    ${items.map((it, i) => `<div class="ed"><select data-led="group" data-i="${i}" class="${same(it, i) ? '' : 'chg'}">${GROUPNAMES.map(g => `<option${g === it.group ? ' selected' : ''}>${g}</option>`).join('')}</select>
+      <input type="number" min="0" data-led="n" data-i="${i}" value="${it.n}" class="${same(it, i) ? '' : 'chg'}" aria-label="Počet">
+      <input list="lmodels" data-led="model" data-i="${i}" value="${lEsc(it.model)}" class="${same(it, i) ? '' : 'chg'}" aria-label="Model">
+      <button type="button" class="x" data-ledrm="${i}" aria-label="Smazat řádek">✕</button></div>`).join('')}
+    <datalist id="lmodels">${MODELS.map(m => `<option value="${m}">`).join('')}</datalist>
+    <button type="button" class="add" id="ledadd" style="margin-top:6px">+ Přidat řádek</button>`;
+}
+function learnRenderSaved(){
+  const d = $('lsaved'); if (!d) return;
+  const fmtIn = r => { const x = r.input; return `${x.program === 'band' ? 'kapela' : 'mluvené slovo'}, ${x.outdoor ? 'venku' : 'uvnitř'}, ${x.width}×${x.depth} m, pódium ${x.stageWidth} m${x.rig ? ', lze věšet' : ''}${x.ap ? ', AP' : ''}`; };
+  const VT = { ok: 'sedí', upravit: 'upravit', spatne: 'jinak' };
+  d.innerHTML = `<summary>Uložené akce: ${lRecs.length} ${lPl(lRecs.length)}</summary>
+    <div class="bar" style="margin:8px 0"><button type="button" id="lfile">${lFileOk ? 'Soubor připojen ✓' : 'Ukládat i do souboru…'}</button><button type="button" id="lexport">Stáhnout JSON</button><label class="linkbtn" for="limport" style="display:inline">Načíst JSON<input id="limport" type="file" accept=".json,application/json" hidden></label></div>
+    ${lRecs.length ? `<div class="tw"><table class="saved"><tbody>${lRecs.map((r, i) => `<tr><td>${lEsc(fmtIn(r))}</td><td>${VT[r.feedback.verdict] || ''}</td><td>${lEsc((r.feedback.note || '').slice(0, 80))}</td><td><button type="button" class="linkbtn" data-lopen="${i}">otevřít</button></td><td><button type="button" class="x" data-ldel="${i}" aria-label="Smazat záznam">✕</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Zatím nic.</p>'}`;
+}
+// Zadání ze záznamu zpět do formuláře.
+function learnOpen(r){
+  const x = r.input;
+  $('prog-' + x.program).checked = true; $(x.outdoor ? 'env-out' : 'env-in').checked = true;
+  $('width').value = x.width; $('depth').value = x.depth; $('stage').value = x.stageWidth; $('rig').checked = x.rig; $('rigH').value = x.rigHeight;
+  $('ap').checked = x.ap; $('acoustic').checked = x.difficultAcoustics; $('drumfill').value = x.drumfill || 'none';
+  mixes = JSON.parse(JSON.stringify(x.mixList || [])); zones = JSON.parse(JSON.stringify(x.zones || []));
+  renderMixes(); renderZones(); lSig = null; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// Soubor: File System Access API (Chrome). Handle se pamatuje v IndexedDB, oprávnění se znovu potvrdí kliknutím.
+const idb = (mode, fn) => new Promise((res, rej) => { const q = indexedDB.open('db-uceni', 1); q.onupgradeneeded = () => q.result.createObjectStore('h');
+  q.onsuccess = () => { const t = q.result.transaction('h', mode); const r = fn(t.objectStore('h')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }; q.onerror = () => rej(q.error); });
+async function lFileWrite(){
+  if (!lFile || !lFileOk) return;
+  try { const w = await lFile.createWritable(); await w.write(JSON.stringify({ app: 'd&b konfigurátor – učení', exportedAt: new Date().toISOString(), records: lRecs }, null, 2)); await w.close(); }
+  catch (e) { lFileOk = false; learnRenderSaved(); }
+}
+async function lFileConnect(){
+  try {
+    if (lFile && (await lFile.requestPermission({ mode: 'readwrite' })) === 'granted') { lFileOk = true; }
+    else if (window.showSaveFilePicker) { lFile = await showSaveFilePicker({ suggestedName: 'uceni.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] }); lFileOk = true; idb('readwrite', s => s.put(lFile, 'file')).catch(() => {}); }
+    else { alert('Prohlížeč neumí ukládat přímo do souboru. Použijte „Stáhnout JSON“.'); return; }
+    await lFileWrite(); learnRenderSaved();
+  } catch (e) {}
+}
+function lExport(){
+  const b = new Blob([JSON.stringify({ app: 'd&b konfigurátor – učení', exportedAt: new Date().toISOString(), records: lRecs }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'uceni-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+if (LEARN) {
+  lLoad();
+  document.title = 'Učení · ' + document.title;
+  document.querySelector('header h1').insertAdjacentHTML('beforeend', ' <span class="learnflag">režim učení</span>');
+  if (window.indexedDB) idb('readonly', s => s.get('file')).then(async h => { if (h) { lFile = h; try { lFileOk = (await h.queryPermission({ mode: 'readwrite' })) === 'granted'; } catch (e) {} learnRenderSaved(); } }).catch(() => {});
+  const L = $('learn');
+  L.addEventListener('click', e => {
+    const t = e.target, f = lCur && lCur.feedback; if (!f) return;
+    if (t.dataset.lverd) { f.verdict = f.verdict === t.dataset.lverd ? '' : t.dataset.lverd; L.querySelectorAll('[data-lverd]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lverd === f.verdict)); learnSave(); }
+    else if (t.dataset.ledrm != null) { const base = lVs.find(x => x.name === f.base); f.items = f.items || (base ? lItems(base.r) : []); f.items.splice(+t.dataset.ledrm, 1); learnRenderEditor(); learnSave(); }
+    else if (t.id === 'ledadd') { const base = lVs.find(x => x.name === f.base); f.items = f.items || (base ? lItems(base.r) : []); f.items.push({ group: 'Delay', n: 2, model: 'T10 PS' }); learnRenderEditor(); learnSave(); }
+    else if (t.id === 'lreset') { f.items = null; f.base = selected; learnRenderEditor(); learnSave(); }
+    else if (t.id === 'lnext') { learnSave(); lSig = null; $('width').focus(); $('lstatus') && ($('lstatus').textContent = 'Uloženo. Zadejte další akci vlevo.'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else if (t.id === 'lclear') { lCur.feedback = { verdict: '', shouldRecommend: '', base: selected, items: null, note: '' }; learnSave(); learnRender(); }
+    else if (t.dataset.lopen != null) { learnOpen(lRecs[+t.dataset.lopen]); }
+    else if (t.dataset.ldel != null) { const r = lRecs[+t.dataset.ldel]; if (confirm('Smazat uložený záznam této akce?')) { lRecs.splice(+t.dataset.ldel, 1); lStore(); lFileWrite(); if (r.sig === lCur.sig) { lSig = null; render(); } else learnRenderSaved(); } }
+    else if (t.id === 'lfile') { lFileConnect(); }
+    else if (t.id === 'lexport') { lExport(); }
+  });
+  L.addEventListener('input', e => {
+    const t = e.target, f = lCur && lCur.feedback; if (!f) return;
+    if (t.id === 'lnote') { f.note = t.value; learnSave(); }
+    else if (t.dataset.led) { const base = lVs.find(x => x.name === f.base); f.items = f.items || (base ? lItems(base.r) : []);
+      const it = f.items[+t.dataset.i]; it[t.dataset.led] = t.dataset.led === 'n' ? (+t.value || 0) : t.value; t.classList.add('chg'); learnSave();
+      if (!$('lreset')) learnRenderEditor(); }
+  });
+  L.addEventListener('change', e => {
+    const t = e.target, f = lCur && lCur.feedback; if (!f) return;
+    if (t.id === 'lrec') { f.shouldRecommend = t.value; learnSave(); }
+    else if (t.id === 'limport' && t.files[0]) { t.files[0].text().then(txt => { try { const d = JSON.parse(txt), recs = d.records || d; let n = 0;
+      for (const r of recs) { if (!r.sig) continue; const i = lRecs.findIndex(x => x.sig === r.sig); if (i >= 0) lRecs[i] = r; else lRecs.push(r); n++; }
+      lStore(); lFileWrite(); lSig = null; render(); alert(`Načteno ${n} záznamů.`); } catch (er) { alert('Soubor se nepodařilo načíst.'); } }); }
+  });
+}
+renderMixes(); renderZones(); render();
+</script>
+</body>
+</html>
